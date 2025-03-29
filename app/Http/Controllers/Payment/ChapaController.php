@@ -9,8 +9,54 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Models\Payment;
 
+
 class ChapaController extends Controller
 {
+
+    /**
+     * @OA\Post(
+     *     path="/payment/chapa/initialize",
+     *     summary="Initialize payment via Chapa",
+     *     description="This endpoint initializes the Chapa payment gateway",
+     *     tags={"Payment"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"amount", "email", "first_name", "last_name", "phone_number"},
+     *             @OA\Property(property="amount", type="number", format="float", example=100.0),
+     *             @OA\Property(property="email", type="string", format="email", example="test@example.com"),
+     *             @OA\Property(property="first_name", type="string", example="John"),
+     *             @OA\Property(property="last_name", type="string", example="Doe"),
+     *             @OA\Property(property="phone_number", type="string", example="1234567890")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment initialized successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="checkout_url", type="string", example="https://checkout.chapa.co/...")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Failed to initialize payment",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="failed"),
+     *             @OA\Property(property="message", type="string", example="Payment initialization failed")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation errors",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="error"),
+     *             @OA\Property(property="message", type="string", example="Validation failed"),
+     *             @OA\Property(property="errors", type="object", additionalProperties={})
+     *         )
+     *     )
+     * )
+     */
     public function initializePayment(Request $request)
     {
         
@@ -91,6 +137,38 @@ class ChapaController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * @OA\Get(
+     *     path="/callback/{reference}",
+     *     summary="Chapa payment callback",
+     *     description="This endpoint handles the callback from Chapa after payment completion",
+     *     tags={"Payment"},
+     *     @OA\Parameter(
+     *         name="reference",
+     *         in="path",
+     *         description="Payment reference",
+     *         required=true,
+     *         @OA\Schema(type="string", example="CHAPA-12345678")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment callback processed successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(property="message", type="string", example="Payment completed successfully")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Payment failed",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="failed"),
+     *             @OA\Property(property="message", type="string", example="Payment failed")
+     *         )
+     *     )
+     * )
+     */
 
     public function callback($reference)
     {

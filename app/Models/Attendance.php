@@ -14,4 +14,7 @@ class Attendance extends Model
     {
         return $this->belongsTo(Staff::class);
     }
+    protected $table = 'attendance';
+    public $timestamps = false;
+
 }
