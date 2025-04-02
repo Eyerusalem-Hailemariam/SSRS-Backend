@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('menu_items', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
+            $table->text('description')->nullable(); // Changed to 'text' to store longer descriptions
+            $table->string('image')->nullable()->default('default_image.jpg');
+            $table->string('categories')->nullable()->change();
+            $table->decimal('price', 8, 2);
             $table->timestamps();
         });
     }
