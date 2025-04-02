@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('tables', function (Blueprint $table) {
             $table->id();
+            $table->integer('table_number')->unique();
+            $table->string('qr_code')->unique();
+            $table->enum('status', ['free', 'occupied'])->default('free');
             $table->timestamps();
         });
     }

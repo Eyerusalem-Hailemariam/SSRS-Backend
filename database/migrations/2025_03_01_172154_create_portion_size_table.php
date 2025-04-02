@@ -13,7 +13,15 @@ return new class extends Migration
     {
         Schema::create('portion_size', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('menu_item_id');
+            $table->string('portion_size');
+            $table->decimal('portion_size_price', 10, 2);
             $table->timestamps();
+
+            $table->foreign('menu_item_id')
+                ->references('id')
+                ->on('menu_items')
+                ->onDelete('cascade');
         });
     }
 
