@@ -68,4 +68,19 @@ class ProfileController extends Controller
 
         return response()->json(['message' => 'Password changed successfully'], 200);
     }
+
+        /**
+     * @OA\Get(
+     *     path="/user/profile",
+     *     summary="Get the currently authenticated user's profile",
+     *     tags={"Auth"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="User profile data")
+     * )
+     */
+    public function getUserProfile(Request $request)
+    {
+        $user = Auth::user();
+        return response()->json($user);
+    }
 }

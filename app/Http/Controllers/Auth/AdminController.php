@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\StaffAccountCreated;
+use Illuminate\Support\Facades\Password;
+use Carbon\Carbon;
+use App\Mail\PasswordResetMail;
+use Illuminate\Support\Facades\DB;
+
+
 
 /**
  * @OA\Tag(
@@ -77,6 +85,8 @@ class AdminController extends Controller
             'tips' => 0,
         ]);
 
+        Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));
+
         return response()->json([
             'name' => $staff->name,
             'email' => $staff->email,
@@ -87,20 +97,5 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function login(Request $request) {
-       $credentials = $request->validate([
-           'email' => 'required|email',
-           'password' => 'required|string',
-       ]); 
-
-       $staff = Staff::where('email', $credentials['email'])->first();
-
-       if (!$staff || !Hash::check($credentials['password'], $staff->password)) {
-           return response()->json(['message' => 'Invalid credentials'], 401);
-       }
-
-        $token = $staff->createToken('auth_token')->plainTextToken;
-
-        return response()->json(['token' => $token], 200);
+    
     }
-}

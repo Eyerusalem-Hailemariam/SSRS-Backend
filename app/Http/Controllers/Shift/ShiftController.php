@@ -105,6 +105,7 @@ class ShiftController extends Controller
      *     )
      * )
      */
+    
     public function store(Request $request)
     {
         if (Auth::user()->role !== 'admin') {
@@ -187,52 +188,52 @@ class ShiftController extends Controller
      *     )
      * )
      */
-public function update(Request $request, $id)
-{
-    $shift = Shift::find($id);
+    public function update(Request $request, $id)
+    {
+        $shift = Shift::find($id);
 
-    if (!$shift) {
-        return response()->json(['message' => 'Shift not found'], 404);
+        if (!$shift) {
+            return response()->json(['message' => 'Shift not found'], 404);
+        }
+
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'start_time' => 'required|date_format:H:i:s',
+            'end_time' => 'required|date_format:H:i:s',
+            'is_overtime' => 'nullable|boolean',
+        ]);
+
+        $startDateTime = $request->start_date . ' ' . $request->start_time;
+        $endDateTime = $request->end_date . ' ' . $request->end_time;
+
+        if (strtotime($endDateTime) <= strtotime($startDateTime)) {
+            return response()->json(['message' => 'End datetime must be after start datetime.'], 422);
+        }
+
+        if ($this->hasShiftConflict($shift->staff_id, $startDateTime, $endDateTime, $id)) {
+            return response()->json(['message' => 'Shift conflict detected. Please choose different times.'], 409);
+        }
+
+        $shift->update([
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'start_time' => $request->start_time,
+            'end_time' => $request->end_time,
+            'is_overtime' => $request->has('is_overtime') ? (bool) $request->is_overtime : false,
+        ]);
+
+        $staff = Staff::find($shift->staff_id);
+        if ($staff) {
+            $staff->notify(new ShiftUpdated($shift, 'updated'));
+        }
+
+        return response()->json(['message' => 'Shift updated successfully', 'shift' => $shift], 200);
     }
-
-    if (Auth::user()->role !== 'admin') {
-        return response()->json(['message' => 'Unauthorized'], 403);
-    }
-
-    $request->validate([
-        'start_date' => 'required|date',
-        'end_date' => 'required|date|after_or_equal:start_date',
-        'start_time' => 'required|date_format:H:i:s',
-        'end_time' => 'required|date_format:H:i:s',
-        'is_overtime' => 'nullable|boolean',
-    ]);
-
-    $startDateTime = $request->start_date . ' ' . $request->start_time;
-    $endDateTime = $request->end_date . ' ' . $request->end_time;
-
-    if (strtotime($endDateTime) <= strtotime($startDateTime)) {
-        return response()->json(['message' => 'End datetime must be after start datetime.'], 422);
-    }
-
-    if ($this->hasShiftConflict($shift->staff_id, $startDateTime, $endDateTime, $id)) {
-        return response()->json(['message' => 'Shift conflict detected. Please choose different times.'], 409);
-    }
-
-    $shift->update([
-        'start_date' => $request->start_date,
-        'end_date' => $request->end_date,
-        'start_time' => $request->start_time,
-        'end_time' => $request->end_time,
-        'is_overtime' => $request->has('is_overtime') ? (bool) $request->is_overtime : false,
-    ]);
-
-    $staff = Staff::find($shift->staff_id);
-    if ($staff) {
-        $staff->notify(new ShiftUpdated($shift, 'updated'));
-    }
-
-    return response()->json(['message' => 'Shift updated successfully', 'shift' => $shift], 200);
-}
 
 
     /**

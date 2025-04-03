@@ -8,6 +8,9 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -73,14 +76,46 @@ class AuthController extends Controller
             'password' => 'required|min:6'
         ]);
 
+        $otp = rand(100000, 999999);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role' => 'customer'
+            'role' => 'customer',
+            'is_verified' => false,
         ]);
 
+        DB::table('user_otps')->insert([
+            'email' => $request->email,
+            'otp' => $otp,
+            'created_at' => now(),
+        ]);
+
+        Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
+
         return response()->json($user, 201);
+    }
+
+
+    public function VerifyOtp(Request $request) {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required'
+        ]);
+
+        $record = DB::table('user_otps')->where('email', $request->email)->first();
+
+        if(!$record || $record->otp != $request->otp) {
+            return response()->json(['message' => 'Invalid OTP'], 400);
+        }
+
+        User::where('email', $request->email)->update(['is_verified' => true]);
+        
+        DB::table('user_otps')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'OTP verified successfully'], 200);
+
     }
 
     /**
@@ -100,6 +135,7 @@ class AuthController extends Controller
      *     @OA\Response(response=401, description="Invalid credentials")
      * )
      */
+
     public function login(Request $request)
     {
         $request->validate([
@@ -144,18 +180,4 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * @OA\Get(
-     *     path="/user/profile",
-     *     summary="Get the currently authenticated user's profile",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="User profile data")
-     * )
-     */
-    public function getUserProfile(Request $request)
-    {
-        $user = Auth::user();
-        return response()->json($user);
-    }
 }
