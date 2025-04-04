@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Payment;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Table;
 use App\Models\MenuItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -20,7 +22,7 @@ class OrderController extends Controller
             'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
             'order_items.*.quantity' => 'required|integer|min:1',
             'customer_ip' => 'required|ip',
-            'customer_generated_id' => 'required|string|max:255',
+            'customer_temp_id' => 'required|string|max:255',
             'order_type' => 'required|in:dine-in,remote', // Specify order type
         ]);
 
@@ -28,16 +30,18 @@ class OrderController extends Controller
         if ($validatedData['order_type'] === 'dine-in') {
             $table = Table::where('table_number', $validatedData['table_number'])->firstOrFail();
         }
+        $tx_ref = 'CHAPA-' . Str::uuid();
 
         $order = Order::create([
             'table_id' => $table ? $table->id : null,
-            'order_date' => now(),
+            'order_date_time' => now(),
             'order_status' => 'pending',
-            'total_amount' => 0,
+            'total_price' => 0,
             'customer_ip' => $validatedData['customer_ip'],
-            'customer_generated_id' => $validatedData['customer_generated_id'],
+            'customer_temp_id' => $validatedData['customer_temp_id'],
             'order_type' => $validatedData['order_type'],
             'payment_status' => 'pending', // Payment is handled separately
+            'tx_ref' => $tx_ref, 
         ]);
 
         $totalAmount = 0;
@@ -46,22 +50,41 @@ class OrderController extends Controller
             $orderItem = new OrderItem([
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
-                'price' => $menuItem->price,
+                'total_price' => $menuItem->price* $item['quantity'],
             ]);
             $order->orderItems()->save($orderItem);
             $totalAmount += $menuItem->price * $item['quantity'];
         }
 
-        $order->update(['total_amount' => $totalAmount]);
+
+        $order->update(['total_price' => $totalAmount]);
 
         if ($table) {
-            $table->update(['table_status' => 'occupied']);
+        $table->update(['table_status' => 'occupied']);
         }
 
+        
+
+        Payment::create([
+            'tx_ref' => $tx_ref,
+            'amount' => $totalAmount,
+            'currency' => 'ETB',
+            'status' => 'pending',
+            'email' => $request->email ?? 'guest@example.com',
+            'first_name' => $request->first_name ?? 'Guest',
+            'last_name' => $request->last_name ?? 'User',
+            'phone_number' => $request->phone_number ?? '0000000000',
+        ]);
+
+// Add tx_ref to the response to be used in payment initialization
         return response()->json([
-            'message' => 'Order placed successfully',
+            'message' => 'Order placed successfully. Proceed to payment.',
             'order' => $order->load('orderItems.menuItem'),
+            'tx_ref' => $tx_ref
         ], 201);
+
+
+
     }
 
     // Notify arrival for remote orders
@@ -105,13 +128,13 @@ class OrderController extends Controller
             $orderItem = new OrderItem([
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
-                'price' => $menuItem->price,
+                'total_price' => $menuItem->price* $item['quantity'],
             ]);
             $order->orderItems()->save($orderItem);
             $totalAmount += $menuItem->price * $item['quantity'];
         }
 
-        $order->update(['total_amount' => $totalAmount]);
+        $order->update(['total_price' => $totalAmount]);
 
         return response()->json(['message' => 'Order updated successfully', 'order' => $order->load('orderItems.menuItem')]);
     }
@@ -121,11 +144,16 @@ class OrderController extends Controller
     {
         $order = Order::findOrFail($id);
 
-        if ($order->payment_status !== 'paid') {
-            return response()->json(['error' => 'Order cannot be processed until paid'], 403);
+        if (!$order->tx_ref) {
+            return response()->json(['error' => 'Order does not have a valid transaction reference'], 400);
         }
 
-        $validatedData = $request->validate(['order_status' => 'required|in:pending,processing,preparing,ready,completed']);
+        $payment = Payment::where('tx_ref', $order->tx_ref)->first(); 
+        if (!$payment || $payment->status !== 'completed') {
+            return response()->json(['error' => 'Order cannot be processed until paid'], 403);
+}
+
+        $validatedData = $request->validate(['order_status' => 'required|in:pending,processing,ready,completed,canceled']);
 
         $order->update(['order_status' => $validatedData['order_status']]);
 
@@ -136,11 +164,11 @@ class OrderController extends Controller
     public function getUserOrders(Request $request)
     {
         $customerIp = $request->query('customer_ip');
-        $customerGeneratedId = $request->query('customer_generated_id');
+        $customerTempId = $request->query('customer_temp_id');
 
         $query = Order::query();
         if ($customerIp) $query->where('customer_ip', $customerIp);
-        if ($customerGeneratedId) $query->where('customer_generated_id', $customerGeneratedId);
+        if ($customerTempId) $query->where('customer_temp_id', $customerTempId);
 
         return response()->json(['orders' => $query->with('orderItems.menuItem')->get()]);
     }

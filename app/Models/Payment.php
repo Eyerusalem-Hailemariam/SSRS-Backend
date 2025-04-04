@@ -19,4 +19,9 @@ class Payment extends Model
         'last_name',
         'phone_number',
     ];
+
+    public function order()
+{
+    return $this->hasOne(Order::class, 'tx_ref', 'tx_ref');
+}
 }
