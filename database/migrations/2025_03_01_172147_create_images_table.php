@@ -13,7 +13,16 @@ return new class extends Migration
     {
         Schema::create('images', function (Blueprint $table) {
             $table->id();
+            $table->string('file_name');
+            $table->string('file_path');
+            $table->string('file_type');
+            $table->unsignedBigInteger('menu_item_id');
             $table->timestamps();
+
+            $table->foreign('menu_item_id')
+                  ->references('id')
+                  ->on('menu_items')
+                  ->onDelete('cascade');
         });
     }
 
