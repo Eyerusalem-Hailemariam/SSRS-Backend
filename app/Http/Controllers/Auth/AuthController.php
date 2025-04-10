@@ -92,26 +92,6 @@ class AuthController extends Controller
     }
 
 
-    public function VerifyOtp(Request $request) {
-        $request->validate([
-            'email' => 'required|email|exists:users,email',
-            'otp' => 'required'
-        ]);
-
-        $record = DB::table('user_otps')->where('email', $request->email)->first();
-
-        if(!$record || $record->otp != $request->otp) {
-            return response()->json(['message' => 'Invalid OTP'], 400);
-        }
-
-        User::where('email', $request->email)->update(['is_verified' => true]);
-        
-        DB::table('user_otps')->where('email', $request->email)->delete();
-
-        return response()->json(['message' => 'OTP verified successfully'], 200);
-
-    }
-
     /**
      * @OA\Post(
      *     path="/send-otp",
@@ -167,6 +147,8 @@ class AuthController extends Controller
      *     @OA\Response(response=401, description="Invalid OTP")
      * )
      */
+
+
     public function verifyOtp(Request $request)
     {
         $request->validate([
