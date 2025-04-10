@@ -10,6 +10,8 @@ use App\Http\Controllers\Attendance\AttendanceController;
 use App\Models\Staff;
 use App\Http\Controllers\Shift\ShiftController;
 use App\Http\Controllers\Shift\OvertimeController;
+use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\Auth\StaffAuthController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -26,15 +28,22 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-otp', [AuthController::class, 'VerifyOtp']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
-Route::post('/staff/login', [AdminController::class, 'login']);
+Route::post('/staff/login', [StaffAuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
+        Route::put('/admin/updateStaff', [AdminController::class, 'updateStaff']);
+        Route::Delete('/admin/staff', [AdminController::class, 'deleteStaff']);
     });
     Route::get('/user/profile', [AuthController::class, 'getUserProfile']);
+    Route::post('/staff/change-password', [StaffAuthController::class, 'changePassword']);
     Route::post('/user/profile/change-password', [ProfileController::class, 'changePassword']);
+    Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
+    Route::put('/staff/update', [StaffAuthController::class, 'updateAccount']);  
 });
 Route::get('/api/documentation', function () {
     return view('l5-swagger::index');

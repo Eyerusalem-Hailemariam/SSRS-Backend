@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Auth;
 
-use OpenApi\Annotations as OA; 
+use OpenApi\Annotations as OA;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -73,14 +74,110 @@ class AuthController extends Controller
             'password' => 'required|min:6'
         ]);
 
+        $otp = rand(100000, 999999);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role' => 'customer'
+            'role' => 'customer',
+            'is_verified' => false,
+            'otp' => $otp,
+            'otp_expired_at' => now()->addMinutes(10)
         ]);
 
+        Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
+
         return response()->json($user, 201);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/send-otp",
+     *     summary="Send OTP to the user for verification",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email"},
+     *             @OA\Property(property="email", type="string", format="email", example="customer@example.com")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="OTP sent successfully"),
+     *     @OA\Response(response=400, description="Validation error")
+     * )
+     */
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        $otp = rand(100000, 999999);
+
+        $user->otp = $otp;
+        $user->otp_expired_at = now()->addMinutes(10);
+        $user->save();
+
+        Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
+
+        return response()->json([
+            'message' => 'OTP sent successfully',
+            'otp' => $otp 
+        ]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/verify-otp",
+     *     summary="Verify OTP for user registration",
+     *     tags={"Auth"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email", "otp"},
+     *             @OA\Property(property="email", type="string", format="email", example="customer@example.com"),
+     *             @OA\Property(property="otp", type="string", example="123456")
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="OTP verified successfully"),
+     *     @OA\Response(response=400, description="OTP expired"),
+     *     @OA\Response(response=401, description="Invalid OTP")
+     * )
+     */
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if($user->otp_expired_at && now()->greaterThan($user->otp_expired_at)){
+            $user->otp = null;
+            $user->otp_expired_at = null;
+            $user->save();
+
+            return response()->json([
+                'message' => 'OTP expired'
+            ], 400);
+        }
+
+        if ($user->otp === $request->otp) {
+            $user->is_verified = true;
+            $user->otp = null; 
+            $user->otp_expired_at = null; 
+            $user->save();
+
+            return response()->json([
+                'message' => 'OTP verified successfully',
+                'user' => $user
+            ]);
+        }
+
+        return response()->json(['message' => 'Invalid OTP'], 401);
     }
 
     /**
@@ -142,20 +239,5 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Successfully logged out'
         ]);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/user/profile",
-     *     summary="Get the currently authenticated user's profile",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="User profile data")
-     * )
-     */
-    public function getUserProfile(Request $request)
-    {
-        $user = Auth::user();
-        return response()->json($user);
     }
 }
