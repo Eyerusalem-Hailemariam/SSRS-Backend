@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 
 
+
 /**
  * @OA\Tag(
  *     name="Admin",
@@ -84,6 +85,8 @@ class AdminController extends Controller
             'overtime_rate' => $request->overtime_rate,
             'tips' => 0,
         ]);
+
+        Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));
 
         Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));
 
