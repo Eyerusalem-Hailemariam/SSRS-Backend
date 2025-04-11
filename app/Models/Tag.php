@@ -9,14 +9,13 @@ class Tag extends Model
 {
     use HasFactory;
     protected $fillable = [
-        'name',
-        'description',
+        'name'
     ];
 
 
     public function menuItem()
 {
-    return $this->belongsToMany(MenuItem::class, 'menu_tag', 'tag_id', 'menu_item_id');
+    return $this->belongsToMany(MenuItem::class, 'menu_tags', 'tag_id', 'menu_item_id');
 }
 
 }

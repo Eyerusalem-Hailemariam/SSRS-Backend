@@ -32,7 +32,10 @@ class OrderController extends Controller
         }
         $tx_ref = 'CHAPA-' . Str::uuid();
 
+        $customerId = auth()->check() ? auth()->id() : null;
+
         $order = Order::create([
+            'customer_id' => $customerId, 
             'table_id' => $table ? $table->id : null,
             'order_date_time' => now(),
             'order_status' => 'pending',
@@ -163,13 +166,23 @@ class OrderController extends Controller
     // Get orders by customer IP and ID
     public function getUserOrders(Request $request)
     {
-        $customerIp = $request->query('customer_ip');
-        $customerTempId = $request->query('customer_temp_id');
-
-        $query = Order::query();
-        if ($customerIp) $query->where('customer_ip', $customerIp);
-        if ($customerTempId) $query->where('customer_temp_id', $customerTempId);
-
-        return response()->json(['orders' => $query->with('orderItems.menuItem')->get()]);
+        if (auth()->check()) {
+            // Retrieve orders for the logged-in user
+            $orders = Order::where('customer_id', auth()->id())
+                ->with('orderItems.menuItem')
+                ->get();
+        } else {
+            // Retrieve orders for guest users
+            $customerIp = $request->query('customer_ip');
+            $customerTempId = $request->query('customer_temp_id');
+    
+            $query = Order::query();
+            if ($customerIp) $query->where('customer_ip', $customerIp);
+            if ($customerTempId) $query->where('customer_temp_id', $customerTempId);
+    
+            $orders = $query->with('orderItems.menuItem')->get();
+        }
+    
+        return response()->json(['orders' => $orders]);
     }
 }

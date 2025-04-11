@@ -15,9 +15,8 @@ class ingredient extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'description'
-    ];
+        'name'
+        ];
 
     public function menuItems()
     {

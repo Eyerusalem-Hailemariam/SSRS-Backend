@@ -17,8 +17,7 @@ class TagController extends Controller
     {
         // Validate the incoming request data
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255'
         ]);
 
         // Create a new tag with the validated data

@@ -14,11 +14,11 @@ class MenuItem extends Model
         'description',
         'image',
         'price',
-        'category_id',
-        'nutritional_info',
+        'category_id'
+       
     ];
 
-    public function categories()
+    public function category()
     {
         return $this->belongsTo(Category::class);
     }
@@ -26,11 +26,6 @@ class MenuItem extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
-    }
-
-    public function portionSizes()
-    {
-        return $this->hasMany(PortionSize::class);
     }
 
     public function ingredients()

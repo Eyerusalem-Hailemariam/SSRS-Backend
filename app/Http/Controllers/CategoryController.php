@@ -41,8 +41,7 @@ class CategoryController extends Controller
     {
         // Validate the incoming request
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'required|string|max:255'  
         ]);
 
         // Update the category with the validated data
