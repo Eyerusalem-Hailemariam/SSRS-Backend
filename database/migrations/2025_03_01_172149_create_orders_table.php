@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
 
 return new class extends Migration
 {
@@ -16,14 +18,16 @@ return new class extends Migration
             $table->unsignedBigInteger('customer_id')->nullable();
             $table->unsignedBigInteger('table_id')->nullable();
             $table->string('customer_ip')->nullable(); // Stores IP address for guests
-            $table->dateTime('order_date_time');
+            $table->dateTime('order_date_time')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->enum('order_type', ['dine-in', 'remote'])->default('dine-in'); 
             $table->decimal('total_price', 10, 2);
             $table->enum('order_status', ['pending', 'processing','ready', 'completed', 'canceled'])->default('pending');
-            $table->boolean('is_paid')->default(false);  
+            $table->enum('payment_status', ['pending', 'completed', 'failed'])->default('pending');
+            $table->string('tx_ref')->nullable()->unique();
             $table->boolean('arrived')->default(false);
             $table->string('customer_temp_id')->nullable();
             $table->boolean('is_remote')->default(false); 
+            $table->timestamp('notified_arrival')->nullable();
             $table->timestamps();
 
             $table->foreign('customer_id')

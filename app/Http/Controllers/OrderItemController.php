@@ -34,6 +34,7 @@ class OrderItemController extends Controller
             'order_id' => $orderId,
             'menu_item_id' => $menuItem->id,
             'quantity' => $validatedData['quantity'],
+            'total_price' => $itemTotal,
         ]);
 
         $order->total_amount += $itemTotal;

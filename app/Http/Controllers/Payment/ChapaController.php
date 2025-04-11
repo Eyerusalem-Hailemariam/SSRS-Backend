@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Payment;
 
 
@@ -185,16 +186,20 @@ class ChapaController extends Controller
 
  
             if (isset($data['status']) && $data['status'] == 'success') {
-                
                 Payment::where('tx_ref', $reference)->update(['status' => 'completed']);
-
+            
+                // Update order payment status
+                Order::whereHas('payment', function ($query) use ($reference) {
+                    $query->where('tx_ref', $reference);
+                })->update(['payment_status' => 'paid']);
+            
                 return response()->json(['status' => 'success', 'message' => 'Payment completed successfully']);
             } else {
-               
                 Payment::where('tx_ref', $reference)->update(['status' => 'failed']);
-
+            
                 return response()->json(['status' => 'failed', 'message' => 'Payment failed']);
             }
+            
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'failed',
