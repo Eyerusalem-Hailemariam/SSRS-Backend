@@ -40,9 +40,8 @@ class IngredientController extends Controller
         $ingredient = Ingredient::findOrFail($id);
 
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+            'name' => 'required|string|max:255'
+           ]);
 
         $ingredient->update($validatedData);
         return response()->json(['message' => 'Ingredient updated successfully', 'ingredient' => $ingredient], 200);

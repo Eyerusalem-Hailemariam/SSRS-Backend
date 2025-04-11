@@ -17,8 +17,9 @@ class Order extends Model
         'order_date_time',
         'total_price',
         'order_status',
-        'arived',
+        'arrived',
         'customer_temp_id',
+        'notified_arrival',
         'is_remote',
         'payment_status'
     ];
@@ -39,7 +40,7 @@ class Order extends Model
     }
 
     public function payment()
-    {
-        return $this->hasOne(Payments::class);
-    }
+{
+    return $this->belongsTo(Payment::class, 'tx_ref', 'tx_ref');
+}
 }
