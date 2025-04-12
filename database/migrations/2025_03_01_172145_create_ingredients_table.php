@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('ingredients', function (Blueprint $table) {
             $table->id();
             $table->string('name')->unique();
+            $table->decimal('calorie', 8, 2)->default(0);
             $table->timestamps();
         });
     }

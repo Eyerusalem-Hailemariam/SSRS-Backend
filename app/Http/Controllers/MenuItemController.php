@@ -11,15 +11,14 @@ class MenuItemController extends Controller
     // Get all menu items with related data
     public function index()
     {
-        $menuItems = MenuItem::with(['menuIngredients', 'tags', 'image'])->get();
-
+        $menuItems = MenuItem::with(['ingredients', 'tags', 'images'])->get();
         return response()->json($menuItems);
     }
 
     // Get a single menu item by ID
     public function show($id)
     {
-        $menuItem = MenuItem::with(['menuIngredients', 'tags', 'image'])->find($id);
+        $menuItem = MenuItem::with(['ingredients', 'tags', 'images'])->find($id);
 
         if (!$menuItem) {
             return response()->json(['error' => 'Menu item not found'], 404);
@@ -53,6 +52,10 @@ class MenuItemController extends Controller
         if (!empty($validatedData['menu_ingredients'])) {
             $menuItem->menuIngredients()->attach($validatedData['menu_ingredients']);
         }
+
+        $totalCalories = $this->calculateTotalCalories($menuItem->menuIngredients);
+        $menuItem->update(['total_calorie' => $totalCalories]);
+
 
         return response()->json(['message' => 'Menu item created successfully', 'menu_item' => $menuItem], 201);
     }
@@ -89,6 +92,10 @@ class MenuItemController extends Controller
             $menuItem->menuIngredients()->sync($validatedData['menu_ingredients'] ?? []);
         }
 
+        $totalCalories = $this->calculateTotalCalories($menuItem->menuIngredients);
+        $menuItem->update(['total_calorie' => $totalCalories]);
+
+
         return response()->json(['message' => 'Menu item updated successfully', 'menu_item' => $menuItem]);
     }
 
@@ -109,4 +116,17 @@ class MenuItemController extends Controller
 
         return response()->json(['message' => 'Menu item deleted successfully']);
     }
+    // Helper method to calculate total calories
+    private function calculateTotalCalories($menuIngredients)
+    {
+        $totalCalories = 0;
+
+        foreach ($menuIngredients as $menuIngredient) {
+            $ingredient = $menuIngredient->ingredient; // Assuming menuIngredient has a relationship to Ingredient
+            $totalCalories += $ingredient->calorie * $menuIngredient->quantity; // Multiply calorie by quantity
+        }
+
+        return $totalCalories;
+    }
 }
+
