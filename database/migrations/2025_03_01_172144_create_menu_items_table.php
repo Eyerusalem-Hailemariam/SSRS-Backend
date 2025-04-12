@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable(); // Changed to 'text' to store longer descriptions
             $table->string('image')->nullable()->default('default_image.jpg');
-            $table->string('categories')->nullable()->change();
+            $table->unsignedBigInteger('category_id'); // Add category_id as a foreign key
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
             $table->decimal('price', 8, 2);
             $table->timestamps();
         });
