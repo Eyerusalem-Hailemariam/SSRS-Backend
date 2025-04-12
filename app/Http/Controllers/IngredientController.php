@@ -20,7 +20,7 @@ class IngredientController extends Controller
     {
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'calorie' => 'required|numeric|min:0', 
         ]);
 
         $ingredient = Ingredient::create($validatedData);
@@ -40,7 +40,8 @@ class IngredientController extends Controller
         $ingredient = Ingredient::findOrFail($id);
 
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255',
+            'calorie' => 'required|numeric|min:0', 
            ]);
 
         $ingredient->update($validatedData);

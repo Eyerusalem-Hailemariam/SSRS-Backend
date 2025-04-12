@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('menu_item_id');
             $table->unsignedBigInteger('ingredient_id');
+            $table->decimal('quantity', 8, 2)->default(0); // Add quantity column
             $table->timestamps();
         
             $table->foreign('menu_item_id')
