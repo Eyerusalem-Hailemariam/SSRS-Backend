@@ -11,7 +11,7 @@ class MenuItemController extends Controller
     // Get all menu items with related data
     public function index()
     {
-        $menuItems = MenuItem::with(['ingredients', 'tags', 'images'])->get();
+        $menuItems = MenuItem::with(['ingredients', 'tags', 'images', 'category'])->get();
         return response()->json($menuItems);
     }
 
@@ -30,15 +30,17 @@ class MenuItemController extends Controller
     // Store a new menu item
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+        $request->validate([
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'image_id' => 'nullable|exists:images,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:tags,id',
-            'menu_ingredients' => 'nullable|array',
-            'menu_ingredients.*' => 'exists:menu_ingredients,id',
+            'price'       => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',   // ✔ Validate category_id
+            'image'       => 'nullable|string',                // (See note on images below)
+            'tags'        => 'nullable|array',
+            'tags.*'      => 'exists:tags,id',
+            'ingredients' => 'nullable|array',
+            'ingredients.*.ingredient_id' => 'required|exists:ingredients,id',
+            'ingredients.*.quantity'     => 'required|numeric|min:0'
         ]);
 
         $menuItem = MenuItem::create($validatedData);
@@ -69,15 +71,17 @@ class MenuItemController extends Controller
             return response()->json(['error' => 'Menu item not found'], 404);
         }
 
-        $validatedData = $request->validate([
-            'name' => 'sometimes|string|max:255',
+        $request->validate([
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'sometimes|numeric|min:0',
-            'image_id' => 'nullable|exists:images,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:tags,id',
-            'menu_ingredients' => 'nullable|array',
-            'menu_ingredients.*' => 'exists:menu_ingredients,id',
+            'price'       => 'required|numeric|min:0',
+            'category_id' => 'required|exists:categories,id',   // ✔ Validate category_id
+            'image'       => 'nullable|string',                // (See note on images below)
+            'tags'        => 'nullable|array',
+            'tags.*'      => 'exists:tags,id',
+            'ingredients' => 'nullable|array',
+            'ingredients.*.ingredient_id' => 'required|exists:ingredients,id',
+            'ingredients.*.quantity'     => 'required|numeric|min:0'
         ]);
 
         $menuItem->update($validatedData);
