@@ -19,7 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('category_id'); // Add category_id as a foreign key
             $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
             $table->decimal('price', 8, 2);
-            $table->decimal('total_calorie', 8, 2); 
+            $table->decimal('total_calorie', 8, 2)->nullable();
             $table->timestamps();
         });
     }
