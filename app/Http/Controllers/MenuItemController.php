@@ -30,7 +30,7 @@ class MenuItemController extends Controller
     // Store a new menu item
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'price'       => 'required|numeric|min:0',
@@ -51,8 +51,12 @@ class MenuItemController extends Controller
         }
 
         // Attach menu ingredients if provided
-        if (!empty($validatedData['menu_ingredients'])) {
-            $menuItem->menuIngredients()->attach($validatedData['menu_ingredients']);
+        if (!empty($validatedData['ingredients'])) {
+            foreach ($validatedData['ingredients'] as $ingredient) {
+                $menuItem->ingredients()->attach($ingredient['ingredient_id'], [
+                    'quantity' => $ingredient['quantity']
+                ]);
+            }
         }
 
         $totalCalories = $this->calculateTotalCalories($menuItem->menuIngredients);
@@ -71,7 +75,7 @@ class MenuItemController extends Controller
             return response()->json(['error' => 'Menu item not found'], 404);
         }
 
-        $request->validate([
+        $validatedData = $request->validate([
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'price'       => 'required|numeric|min:0',
@@ -92,8 +96,13 @@ class MenuItemController extends Controller
         }
 
         // Sync menu ingredients if provided
-        if ($request->has('menu_ingredients')) {
-            $menuItem->menuIngredients()->sync($validatedData['menu_ingredients'] ?? []);
+        if ($request->has('ingredients') && !empty($validatedData['ingredients'])) {
+            $menuItem->menuIngredients()->detach(); // Detach existing ingredients
+            foreach ($validatedData['ingredients'] as $ingredient) {
+                $menuItem->ingredients()->attach($ingredient['ingredient_id'], [
+                    'quantity' => $ingredient['quantity']
+                ]);
+            }
         }
 
         $totalCalories = $this->calculateTotalCalories($menuItem->menuIngredients);
@@ -114,7 +123,7 @@ class MenuItemController extends Controller
 
         // Detach related models before deletion
         $menuItem->tags()->detach();
-        $menuItem->menuIngredients()->detach();
+        $menuItem->ingredients()->detach();
 
         $menuItem->delete();
 
@@ -122,15 +131,19 @@ class MenuItemController extends Controller
     }
     // Helper method to calculate total calories
     private function calculateTotalCalories($menuIngredients)
-    {
-        $totalCalories = 0;
+{
+    $totalCalories = 0;
 
-        foreach ($menuIngredients as $menuIngredient) {
-            $ingredient = $menuIngredient->ingredient; // Assuming menuIngredient has a relationship to Ingredient
-            $totalCalories += $ingredient->calorie * $menuIngredient->quantity; // Multiply calorie by quantity
-        }
+    if (empty($menuIngredients)) {
+        return $totalCalories; // Return 0 if no ingredients are provided
+    }
 
-        return $totalCalories;
+    foreach ($menuIngredients as $menuIngredient) {
+        $ingredient = $menuIngredient->ingredient; // Assuming menuIngredient has a relationship to Ingredient
+        $totalCalories += $ingredient->calorie * $menuIngredient->quantity; // Multiply calorie by quantity
+    }
+
+    return $totalCalories;
     }
 }
 

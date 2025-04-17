@@ -14,7 +14,8 @@ class MenuItem extends Model
         'description',
         'image',
         'price',
-        'category_id'
+        'category_id',
+        'total_calorie'
        
     ];
 
@@ -29,8 +30,15 @@ class MenuItem extends Model
     }
 
     public function ingredients()
+{
+    return $this->belongsToMany(Ingredient::class, 'menu_ingredients')
+                ->withPivot('quantity')
+                ->withTimestamps(); // optional
+}
+
+    public function menuIngredients()
     {
-        return $this->belongsToMany(Ingredient::class, 'menu_ingredients');
+        return $this->hasMany(MenuIngredient::class, 'menu_item_id');
     }
 
     public function images()
