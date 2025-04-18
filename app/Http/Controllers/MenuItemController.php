@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class MenuItemController extends Controller
     // Get a single menu item by ID
     public function show($id)
     {
-        $menuItem = MenuItem::with(['ingredients', 'tags', 'images'])->find($id);
+        $menuItem = MenuItem::with(['ingredients', 'tags', 'images', 'category'])->find($id);
 
         if (!$menuItem) {
             return response()->json(['error' => 'Menu item not found'], 404);
@@ -34,14 +35,20 @@ class MenuItemController extends Controller
             'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
             'price'       => 'required|numeric|min:0',
-            'category_id' => 'required|exists:categories,id',   // ✔ Validate category_id
-            'image'       => 'nullable|string',                // (See note on images below)
+            'category_id' => 'required|exists:categories,id',
+            'image'       => 'nullable|file|image|max:8192',
             'tags'        => 'nullable|array',
             'tags.*'      => 'exists:tags,id',
             'ingredients' => 'nullable|array',
             'ingredients.*.ingredient_id' => 'required|exists:ingredients,id',
             'ingredients.*.quantity'     => 'required|numeric|min:0'
         ]);
+
+        if ($request->hasFile('image')) {
+            $filename = uniqid() . '.' . $request->file('image')->getClientOriginalExtension();
+            $path = $request->file('image')->storeAs('', $filename, 'public');
+            $validatedData['image'] = $path;
+        }
 
         $menuItem = MenuItem::create($validatedData);
 
@@ -57,7 +64,7 @@ class MenuItemController extends Controller
                     'quantity' => $ingredient['quantity']
                 ]);
             }
-        }
+        }    
 
         $totalCalories = $this->calculateTotalCalories($menuItem->menuIngredients);
         $menuItem->update(['total_calorie' => $totalCalories]);
@@ -80,13 +87,26 @@ class MenuItemController extends Controller
             'description' => 'nullable|string',
             'price'       => 'required|numeric|min:0',
             'category_id' => 'required|exists:categories,id',   // ✔ Validate category_id
-            'image'       => 'nullable|string',                // (See note on images below)
+            'image'       => 'nullable|file|image|max:8192',
             'tags'        => 'nullable|array',
             'tags.*'      => 'exists:tags,id',
             'ingredients' => 'nullable|array',
             'ingredients.*.ingredient_id' => 'required|exists:ingredients,id',
             'ingredients.*.quantity'     => 'required|numeric|min:0'
         ]);
+
+        // ✅ Only handle image if a new one was uploaded
+        if ($request->hasFile('image')) {
+            // Delete the old image file
+            if ($menuItem->image && Storage::disk('public')->exists($menuItem->image)) {
+                Storage::disk('public')->delete($menuItem->image);
+            }
+
+            // Store new image
+            $filename = uniqid() . '.' . $request->file('image')->getClientOriginalExtension();
+            $path = $request->file('image')->storeAs('', $filename, 'public');
+            $validatedData['image'] = $path;
+        }
 
         $menuItem->update($validatedData);
 
@@ -97,7 +117,7 @@ class MenuItemController extends Controller
 
         // Sync menu ingredients if provided
         if ($request->has('ingredients') && !empty($validatedData['ingredients'])) {
-            $menuItem->menuIngredients()->detach(); // Detach existing ingredients
+            $menuItem->menuIngredients()->delete();
             foreach ($validatedData['ingredients'] as $ingredient) {
                 $menuItem->ingredients()->attach($ingredient['ingredient_id'], [
                     'quantity' => $ingredient['quantity']
@@ -121,6 +141,10 @@ class MenuItemController extends Controller
             return response()->json(['error' => 'Menu item not found'], 404);
         }
 
+        if ($menuItem->image && Storage::disk('public')->exists($menuItem->image)) {
+            Storage::disk('public')->delete($menuItem->image);
+        }
+
         // Detach related models before deletion
         $menuItem->tags()->detach();
         $menuItem->ingredients()->detach();
@@ -129,21 +153,22 @@ class MenuItemController extends Controller
 
         return response()->json(['message' => 'Menu item deleted successfully']);
     }
+    
     // Helper method to calculate total calories
     private function calculateTotalCalories($menuIngredients)
-{
-    $totalCalories = 0;
+    {
+        $totalCalories = 0;
 
-    if (empty($menuIngredients)) {
-        return $totalCalories; // Return 0 if no ingredients are provided
-    }
+        if (empty($menuIngredients)) {
+            return $totalCalories; // Return 0 if no ingredients are provided
+        }
 
-    foreach ($menuIngredients as $menuIngredient) {
-        $ingredient = $menuIngredient->ingredient; // Assuming menuIngredient has a relationship to Ingredient
-        $totalCalories += $ingredient->calorie * $menuIngredient->quantity; // Multiply calorie by quantity
-    }
+        foreach ($menuIngredients as $menuIngredient) {
+            $ingredient = $menuIngredient->ingredient; // Assuming menuIngredient has a relationship to Ingredient
+            $totalCalories += ($ingredient->calorie / 100) * $menuIngredient->quantity;
+        }
 
-    return $totalCalories;
+        return round($totalCalories, 2);
     }
 }
 
