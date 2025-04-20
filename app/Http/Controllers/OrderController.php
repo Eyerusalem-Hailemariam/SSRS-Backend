@@ -17,7 +17,7 @@ class OrderController extends Controller
     public function store(Request $request)
     {
         $validatedData = $request->validate([
-            'table_number' => 'nullable|integer|exists:tables,table_number', // Nullable for remote orders
+            'table_number' => $request->order_type === 'dine-in' ? 'required|integer|exists:tables,table_number' : 'nullable|integer|exists:tables,table_number',
             'order_items' => 'required|array',
             'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
             'order_items.*.quantity' => 'required|integer|min:1',

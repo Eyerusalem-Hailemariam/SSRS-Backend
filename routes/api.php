@@ -94,7 +94,10 @@ Route::prefix('tables')->group(function () {
     Route::post('/', [TableController::class, 'store']); // Create a table
     Route::get('/{id}', [TableController::class, 'show']); // Get a single table
     Route::put('/{id}', [TableController::class, 'update']); // Update a table
+    Route::delete('/batch', [TableController::class, 'destroyBatchByRange']);
+    Route::delete('/all', [TableController::class, 'destroyAll']);
     Route::delete('/{id}', [TableController::class, 'destroy']); // Delete a table
+    
 });
 //OrderItem routes
 

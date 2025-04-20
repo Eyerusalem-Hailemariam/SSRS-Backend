@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->integer('table_number')->unique();
             $table->string('qr_code')->unique();
-            $table->enum('status', ['free', 'occupied'])->default('free');
+            $table->enum('table_status', ['free', 'occupied'])->default('free');
             $table->timestamps();
         });
     }
