@@ -17,15 +17,26 @@ class IngredientController extends Controller
 
     // Store a new ingredient
     public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'calorie' => 'required|numeric|min:0', 
-        ]);
+{
+    // Validate the incoming request data
+    $validatedData = $request->validate([
+        'ingredients' => 'required|array', // Expect an array of ingredients
+        'ingredients.*.name' => 'required|string|max:255', // Validate each ingredient's name
+        'ingredients.*.calorie' => 'required|numeric|min:0', // Validate each ingredient's calorie
+    ]);
 
-        $ingredient = Ingredient::create($validatedData);
-        return response()->json(['message' => 'Ingredient created successfully', 'ingredient' => $ingredient], 201);
+    $createdIngredients = [];
+    foreach ($validatedData['ingredients'] as $ingredientData) {
+        // Create each ingredient and add it to the createdIngredients array
+        $createdIngredients[] = Ingredient::create($ingredientData);
     }
+
+    // Return the created ingredients as a JSON response with a success message
+    return response()->json([
+        'message' => 'Ingredients created successfully.',
+        'ingredients' => $createdIngredients
+    ], 201); // HTTP status code 201 means Created
+}
 
     // Show a specific ingredient
     public function show($id)

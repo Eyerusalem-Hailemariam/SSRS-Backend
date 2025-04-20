@@ -42,6 +42,47 @@ class TableController extends Controller
         return response()->json(['message' => 'Tables created successfully', 'tables' => $tables], 201);
     }
 
+    // Store tables in a range
+    public function storeByRange(Request $request)
+    {
+        $validatedData = $request->validate([
+            'start_table_number' => 'required|integer|min:1',
+            'end_table_number' => 'required|integer|min:1|gte:start_table_number',
+            'base_link' => 'required|url',
+            'table_status' => 'nullable|in:free,occupied',
+     ]);
+
+         $baseLink = rtrim($validatedData['base_link'], '/');
+        $tableStatus = $validatedData['table_status'] ?? 'free';
+
+        $tablesToCreate = [];
+        for ($i = $validatedData['start_table_number']; $i <= $validatedData['end_table_number']; $i++) {
+         // Check if the table number already exists
+            if (!Table::where('table_number', $i)->exists()) {
+                $tablesToCreate[] = [
+                    'table_number' => $i,
+                    'qr_code' => url("{$baseLink}/menu/{$i}"),
+                    'table_status' => $tableStatus,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+    // Bulk insert the new tables
+    if (!empty($tablesToCreate)) {
+        Table::insert($tablesToCreate);
+    }
+
+    return response()->json([
+        'message' => count($tablesToCreate) . " tables added successfully",
+        'skipped_tables' => array_diff(
+            range($validatedData['start_table_number'], $validatedData['end_table_number']),
+            array_column($tablesToCreate, 'table_number')
+        ),
+    ], 201);
+}
+
     // Retrieve a single table
     public function show($id)
     {
@@ -72,9 +113,9 @@ class TableController extends Controller
     }
 
     // Delete a table
-    public function destroy($id)
+    public function destroy($tableNumber)
     {
-        $table = Table::find($id);
+        $table = Table::where('table_number', $tableNumber)->first();
         if (!$table) {
             return response()->json(['message' => 'Table not found'], 404);
         }
@@ -135,7 +176,7 @@ public function destroyBatchByRange(Request $request)
 public function destroyAll()
 {
     $deletedCount = Table::count();
-    Table::query()->delete(); // Use delete(), not truncate()
+    Table::query()->delete(); // Delete all tables
 
     return response()->json([
         'message' => "All {$deletedCount} tables deleted successfully",

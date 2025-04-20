@@ -13,6 +13,29 @@ use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
+
+    public function index()
+{
+    // Retrieve all orders with their associated order items and menu items
+    $orders = Order::with('orderItems.menuItem')->get();
+
+    return response()->json(['orders' => $orders], 200);
+}
+      
+    public function show($id)
+{
+    // Find the order by ID and include related order items and menu items
+    $order = Order::with('orderItems.menuItem')->find($id);
+
+    // If the order is not found, return a 404 response
+    if (!$order) {
+        return response()->json(['error' => 'Order not found'], 404);
+    }
+
+    // Return the order details
+    return response()->json(['order' => $order], 200);
+}
+
     // Store a new order
     public function store(Request $request)
     {
@@ -91,22 +114,53 @@ class OrderController extends Controller
     }
 
     // Notify arrival for remote orders
-    public function notifyArrival(Request $request, $id)
-    {
-        $order = Order::findOrFail($id);
+public function notifyArrival(Request $request, $id)
+{
+    $order = Order::findOrFail($id);
 
-        if ($order->order_type !== 'remote') {
-            return response()->json(['error' => 'This order is not a remote order'], 400);
-        }
-
-        if ($order->order_status !== 'pending') {
-            return response()->json(['error' => 'Cannot notify arrival for a non-pending order'], 400);
-        }
-
-        $order->update(['notified_arrival' => now()]);
-
-        return response()->json(['message' => 'Arrival notified successfully', 'order' => $order]);
+    // Ensure the order is a remote order
+    if ($order->order_type !== 'remote') {
+        return response()->json(['error' => 'This order is not a remote order'], 400);
     }
+
+    // Ensure the order is in a pending state
+    if ($order->order_status !== 'pending') {
+        return response()->json(['error' => 'Cannot notify arrival for a non-pending order'], 400);
+    }
+
+    // Validate the table number
+    $validatedData = $request->validate([
+        'table_number' => 'nullable|integer|exists:tables,table_number',
+    ]);
+
+    $table = null;
+
+    // If a table number is provided, find the table and mark it as occupied
+    if (!empty($validatedData['table_number'])) {
+        $table = Table::where('table_number', $validatedData['table_number'])->first();
+
+        // Ensure the table is not already occupied
+        if ($table->table_status === 'occupied') {
+            return response()->json(['error' => 'The selected table is already occupied'], 400);
+        }
+
+        // Update the table status to occupied
+        $table->update(['table_status' => 'occupied']);
+    }
+
+    // Update the order to associate it with the table and mark arrival
+    $order->update([
+        'table_id' => $table->id,
+        'notified_arrival' => now(),
+        'arrived' => 1, // Mark the order as arrived
+    ]);
+
+    return response()->json([
+        'message' => 'Arrival notified successfully, table assigned',
+        'order' => $order->load('orderItems.menuItem'),
+        'table' => $table,
+    ]);
+}
 
     // Update order (only if pending)
     public function update(Request $request, $id)
