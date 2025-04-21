@@ -71,6 +71,7 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
+        Route::get('/{id}', [OrderController::class, 'show']);
         Route::post('/', [OrderController::class, 'store']);
         Route::patch('/{id}/notify-arrival', [OrderController::class, 'notifyArrival']);
         Route::put('/{id}', [OrderController::class, 'update']);

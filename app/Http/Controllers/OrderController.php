@@ -21,6 +21,20 @@ class OrderController extends Controller
 
     return response()->json(['orders' => $orders], 200);
 }
+      
+    public function show($id)
+{
+    // Find the order by ID and include related order items and menu items
+    $order = Order::with('orderItems.menuItem')->find($id);
+
+    // If the order is not found, return a 404 response
+    if (!$order) {
+        return response()->json(['error' => 'Order not found'], 404);
+    }
+
+    // Return the order details
+    return response()->json(['order' => $order], 200);
+}
 
     // Store a new order
     public function store(Request $request)
