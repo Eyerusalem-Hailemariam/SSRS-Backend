@@ -70,6 +70,7 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 //order routes 
 
     Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
         Route::post('/', [OrderController::class, 'store']);
         Route::patch('/{id}/notify-arrival', [OrderController::class, 'notifyArrival']);
         Route::put('/{id}', [OrderController::class, 'update']);
@@ -91,12 +92,13 @@ Route::prefix('menuitems')->group(function () {
 
 Route::prefix('tables')->group(function () {
     Route::get('/', [TableController::class, 'index']); // Get all tables
+    Route::post('/range', [TableController::class, 'storeByRange']); // Create tables in a range
     Route::post('/', [TableController::class, 'store']); // Create a table
     Route::get('/{id}', [TableController::class, 'show']); // Get a single table
     Route::put('/{id}', [TableController::class, 'update']); // Update a table
     Route::delete('/batch', [TableController::class, 'destroyBatchByRange']);
     Route::delete('/all', [TableController::class, 'destroyAll']);
-    Route::delete('/{id}', [TableController::class, 'destroy']); // Delete a table
+    Route::delete('/{table_number}', [TableController::class, 'destroy']); // Delete a table by table_number
     
 });
 //OrderItem routes

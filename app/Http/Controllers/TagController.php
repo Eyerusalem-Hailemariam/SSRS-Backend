@@ -17,16 +17,22 @@ class TagController extends Controller
     {
         // Validate the incoming request data
         $request->validate([
-            'name' => 'required|string|max:255'
+            'name' => 'required|string|max:255' // Expect a comma-separated string of tag names
         ]);
 
-        // Create a new tag with the validated data
-        $tag = Tag::create($request->all());
+        // Split the comma-separated names into an array
+        $tagNames = array_map('trim', explode(',', $request->name));
 
-        // Return the created tag as a JSON response with a success message
+        $createdTags = [];
+        foreach ($tagNames as $tagName) {
+        // Create each tag and add it to the createdTags array
+        $createdTags[] = Tag::create(['name' => $tagName]);
+        }
+
+        // Return the created tags as a JSON response with a success message
         return response()->json([
-            'message' => 'Tag created successfully.',
-            'tag' => $tag
+            'message' => 'Tags created successfully.',
+            'tags' => $createdTags
         ], 201); // HTTP status code 201 means Created
     }
 
