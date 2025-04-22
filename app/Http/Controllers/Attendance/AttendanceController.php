@@ -91,8 +91,7 @@ class AttendanceController extends Controller
         $shiftStart = Carbon::parse($shift->start_date . ' ' . $shift->start_time);
         $shiftEnd = Carbon::parse($shift->end_date . ' ' . $shift->end_time);
 
-        
-        //to get the tolerance minutes from the request or use the default value
+
         $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 15)); 
 
         $isStartTime = $currentTime->between(
