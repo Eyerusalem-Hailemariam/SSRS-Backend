@@ -50,9 +50,16 @@ class OrderController extends Controller
         ]);
 
         $table = null;
-        if ($validatedData['order_type'] === 'dine-in') {
-            $table = Table::where('table_number', $validatedData['table_number'])->firstOrFail();
+
+        // If a table number is provided, validate that it is not occupied
+        if (!empty($validatedData['table_number'])) {
+            $table = Table::where('table_number', $validatedData['table_number'])->first();
+    
+            if ($table->table_status === 'occupied') {
+                return response()->json(['error' => 'The selected table is already occupied'], 400);
+            }
         }
+
         $tx_ref = 'CHAPA-' . Str::uuid();
 
         $customerId = auth()->check() ? auth()->id() : null;
@@ -239,4 +246,21 @@ public function notifyArrival(Request $request, $id)
     
         return response()->json(['orders' => $orders]);
     }
+
+    public function destroy($id)
+{
+    // Find the order by ID
+    $order = Order::find($id);
+
+    // If the order is not found, return a 404 response
+    if (!$order) {
+        return response()->json(['error' => 'Order not found'], 404);
+    }
+
+    // Delete the order and its associated order items
+    $order->orderItems()->delete(); // Delete related order items
+    $order->delete(); // Delete the order itself
+
+    return response()->json(['message' => 'Order deleted successfully'], 200);
+}
 }
