@@ -220,7 +220,7 @@ class ShiftController extends Controller
     
         $request->validate($rules);
     
-        // Only check conflicts if dates and times are being updated
+
         if ($request->has(['start_date', 'start_time', 'end_date', 'end_time'])) {
             $startDateTime = $request->start_date . ' ' . $request->start_time;
             $endDateTime = $request->end_date . ' ' . $request->end_time;
