@@ -11,9 +11,9 @@ class TableController extends Controller
     // Retrieve all tables
     public function index()
     {
-        return response()->json(Table::all(), 200);
+        $tables = Table::all(['table_number', 'qr_code', 'table_status']);
+        return response()->json($tables, 200);
     }
-
     // Store new tables
     public function store(Request $request)
     {
@@ -181,5 +181,26 @@ public function destroyAll()
     return response()->json([
         'message' => "All {$deletedCount} tables deleted successfully",
     ], 200);
+}
+
+public function freeTable($tableNumber)
+{
+    // Find the table by its table number
+    $table = Table::where('table_number', $tableNumber)->first();
+
+    // If the table is not found, return a 404 response
+    if (!$table) {
+        return response()->json(['message' => 'Table not found'], 404);
+    }
+
+    // If the table is already free, return a message
+    if ($table->table_status === 'free') {
+        return response()->json(['message' => 'Table is already free'], 400);
+    }
+
+    // Update the table status to free
+    $table->update(['table_status' => 'free']);
+
+    return response()->json(['message' => 'Table freed successfully', 'table' => $table], 200);
 }
 }
