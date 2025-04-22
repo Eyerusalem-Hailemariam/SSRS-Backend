@@ -38,13 +38,21 @@ class AuthController extends Controller
             'password' => 'required|min:6',
         ]);
 
+        
+
+        $otp = rand(100000, 999999);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role' => 'admin'
+            'role' => 'admin',
+            'is_verified' => false,
+            'otp' => $otp,
+            'otp_expired_at' => now()->addMinutes(10)
         ]);
 
+        Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
         return response()->json($user, 201);
     }
 

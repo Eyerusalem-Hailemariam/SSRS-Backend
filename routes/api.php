@@ -15,7 +15,6 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\MenuTagController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ImageController;
-
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Models\Staff;
 use App\Http\Controllers\Shift\ShiftController;
@@ -36,6 +35,7 @@ use App\Http\Controllers\Auth\StaffAuthController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+//Authentication routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/verify-otp', [AuthController::class, 'VerifyOtp']);
@@ -55,14 +55,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
     Route::put('/staff/update', [StaffAuthController::class, 'updateAccount']);  
 });
+//Swagger routes
 Route::get('/api/documentation', function () {
     return view('l5-swagger::index');
 });
+//Shift routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/shifts', [ShiftController::class, 'index']);
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/shifts', [ShiftController::class, 'store']);
+        Route::match(['put', 'patch'], '/shifts/{id}', [ShiftController::class, 'update']);
+        Route::delete('/shifts/{id}', [ShiftController::class, 'destroy']);
+    });
+});
+
 // Payment routes
 Route::get('callback/{reference}', [ChapaController::class, 'callback'])->name('callback.api');
 Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePayment']);
 
-
+//Attendance routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('role:admin')->group(function () {
+    Route::post('/scan', [AttendanceController::class, 'scan']);
+    });
+});
 
 
 

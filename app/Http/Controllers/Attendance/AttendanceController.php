@@ -9,7 +9,10 @@ use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\Staff;
 use App\Models\Shift;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
+
 
 class AttendanceController extends Controller
 {
@@ -57,7 +60,7 @@ class AttendanceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'staff_id' => 'required|string',
-            'mode' => 'required|string|in:checkin,checkout',
+            'mode' => 'required|string|in:clock_in,clock_out',
             'tolerance_minutes' => 'nullable|integer|min:1',
         ]);
 
@@ -65,7 +68,8 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'Invalid input'], 422);
         }
 
-        $staff = Staff::find($request->staff_id);
+        $staff = Staff::where('staff_id', $request->staff_id)->first();
+
 
         if (!$staff) {
             return response()->json(['message' => 'Staff not found'], 404);
@@ -84,8 +88,10 @@ class AttendanceController extends Controller
             return response()->json(['message' => 'No shift assigned for today'], 404);
         }
 
-        $shiftStart = \Carbon\Carbon::parse($shift->start_time);
-        $shiftEnd = \Carbon\Carbon::parse($shift->end_time);
+        $shiftStart = Carbon::parse($shift->start_date . ' ' . $shift->start_time);
+        $shiftEnd = Carbon::parse($shift->end_date . ' ' . $shift->end_time);
+
+        
 
         $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 15)); 
 

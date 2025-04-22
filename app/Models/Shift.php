@@ -22,6 +22,7 @@ use OpenApi\Annotations as OA;
 
 class Shift extends Model
 {
+    public $timestamps = false;
     use HasFactory;
     protected $fillable = [
         'staff_id',

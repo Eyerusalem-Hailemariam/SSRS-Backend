@@ -88,7 +88,6 @@ class AdminController extends Controller
 
         Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));
 
-        Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));
 
         return response()->json([
             'name' => $staff->name,
