@@ -18,7 +18,6 @@ class CategoryController extends Controller
         // Validate the incoming request
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
         ]);
 
         // Create a new category

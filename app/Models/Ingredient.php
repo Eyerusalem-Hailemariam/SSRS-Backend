@@ -15,12 +15,21 @@ class ingredient extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'name'
+        'name',
+        'calorie',
         ];
 
-    public function menuItems()
-    {
-        return $this->belongsToMany(MenuItem::class, 'menu_ingredients', 'ingredient_id', 'menu_item_id');
-    }
+        public function menuItems()
+        {
+            return $this->belongsToMany(MenuItem::class, 'menu_ingredients')
+                        ->withPivot('quantity')
+                        ->withTimestamps(); // optional
+        }
+    
+        // One-to-many relationship to the pivot model
+        public function menuIngredients()
+        {
+            return $this->hasMany(MenuIngredient::class);
+        }
 
 }

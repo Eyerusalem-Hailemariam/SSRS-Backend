@@ -86,11 +86,14 @@ Route::middleware('auth:sanctum')->group(function () {
 //order routes 
 
     Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
+        Route::get('/user', [OrderController::class, 'getUserOrders']);
+        Route::get('/{id}', [OrderController::class, 'show']);
         Route::post('/', [OrderController::class, 'store']);
         Route::patch('/{id}/notify-arrival', [OrderController::class, 'notifyArrival']);
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
-        Route::get('/user', [OrderController::class, 'getUserOrders']);
+        Route::delete('/{id}', [OrderController::class, 'destroy']);
     });
 
 //MenuItem routes
@@ -107,10 +110,15 @@ Route::prefix('menuitems')->group(function () {
 
 Route::prefix('tables')->group(function () {
     Route::get('/', [TableController::class, 'index']); // Get all tables
+    Route::post('/range', [TableController::class, 'storeByRange']); // Create tables in a range
     Route::post('/', [TableController::class, 'store']); // Create a table
     Route::get('/{id}', [TableController::class, 'show']); // Get a single table
     Route::put('/{id}', [TableController::class, 'update']); // Update a table
-    Route::delete('/{id}', [TableController::class, 'destroy']); // Delete a table
+    Route::delete('/batch', [TableController::class, 'destroyBatchByRange']);
+    Route::delete('/all', [TableController::class, 'destroyAll']);
+    Route::delete('/{table_number}', [TableController::class, 'destroy']); // Delete a table by table_number
+    Route::patch('/{tableNumber}/free', [TableController::class, 'freeTable']);
+    
 });
 //OrderItem routes
 

@@ -20,13 +20,11 @@ class MenuIngredientController extends Controller
         $validatedData = $request->validate([
             'ingredient_id' => 'required|exists:ingredients,id',
             'quantity' => 'required|numeric',
-            'unit' => 'required|string|max:50',
         ]);
 
         $menuIngredient = MenuIngredient::findOrFail($menuItemId);
         $menuIngredient->ingredients()->attach($validatedData['ingredient_id'], [
             'quantity' => $validatedData['quantity'],
-            'unit' => $validatedData['unit'],
         ]);
 
         return response()->json(['message' => 'Menu ingredient added successfully.'], 201);
@@ -37,13 +35,11 @@ class MenuIngredientController extends Controller
     {
         $validatedData = $request->validate([
             'quantity' => 'required|numeric',
-            'unit' => 'required|string|max:50',
         ]);
 
         $menuIngredient = MenuIngredient::findOrFail($menuItemId);
         $menuIngredient->ingredients()->updateExistingPivot($ingredientId, [
             'quantity' => $validatedData['quantity'],
-            'unit' => $validatedData['unit'],
         ]);
 
         return response()->json(['message' => 'Menu ingredient updated successfully.'], 200);
