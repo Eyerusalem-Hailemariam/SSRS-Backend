@@ -17,7 +17,7 @@ class OrderController extends Controller
     public function index()
 {
     // Retrieve all orders with their associated order items and menu items
-    $orders = Order::with('orderItems.menuItem')->get();
+    $orders = Order::with('orderItems.menuItem', 'table')->get();
 
     return response()->json(['orders' => $orders], 200);
 }
@@ -25,7 +25,7 @@ class OrderController extends Controller
     public function show($id)
 {
     // Find the order by ID and include related order items and menu items
-    $order = Order::with('orderItems.menuItem')->find($id);
+    $order = Order::with('orderItems.menuItem', 'table')->find($id);
 
     // If the order is not found, return a 404 response
     if (!$order) {
