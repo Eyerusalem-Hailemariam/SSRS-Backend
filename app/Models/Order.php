@@ -23,7 +23,8 @@ class Order extends Model
         'customer_temp_id',
         'notified_arrival',
         'is_remote',
-        'payment_status'
+        'payment_status',
+        'tx_ref' 
     ];
 
     public function customer()
