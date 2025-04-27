@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\Password;
 use App\Mail\PasswordResetMail;
 
 
-
 class AuthController extends Controller
 {
     /**
@@ -38,49 +37,102 @@ class AuthController extends Controller
      *     @OA\Response(response=400, description="Validation error")
      * )
      */
-    public function registerAdmin(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string',
-            'email' => 'required|email|unique:admin',
-            'password' => 'required|min:6',
-        ]);
-    
-        $admin = Admin::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => 'admin',
-        ]);
-    
-        return response()->json($admin, 201); 
-    }
+            public function registerAdmin(Request $request)
+            {
+                $request->validate([
+                    'name' => 'required|string',
+                    'email' => 'required|email|unique:admin',
+                    'password' => 'required|min:6',
+                ]);
+            
+                $admin = Admin::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => bcrypt($request->password),
+                    'role' => 'admin',
+                ]);
+            
+                return response()->json($admin, 201); 
+            }
 
     
-    public function Adminlogin(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+            public function Adminlogin(Request $request)
+                {
+                    $request->validate([
+                        'email' => 'required|email',
+                        'password' => 'required'
+                    ]);
 
-        $admin = Admin::where('email', $request->email)->first();
+                    $admin = Admin::where('email', $request->email)->first();
 
-        if (!$admin || !Hash::check($request->password, $admin->password)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+                    if (!$admin || !Hash::check($request->password, $admin->password)) {
+                        return response()->json(['message' => 'Invalid credentials'], 401);
+                    }
+
+                    $token = $admin->createToken('auth_token');
+
+                    return response()->json([
+                        'message' => 'User logged in successfully',
+                        'access_token' => $token->plainTextToken,
+                        'token_type' => 'Bearer',
+                        'user' => $admin
+                    ]);
+                }
+
+            public function forgotAdminPassword(Request $request)
+            {
+                $request->validate(['email' => 'required|email|exists:admin,email']);
+            
+                $email = $request->email;
+
+                DB::table('password_reset_tokens')->where('email', $email)->delete();
+            
+                $token = random_int(100000, 999999); 
+
+                DB::table('password_reset_tokens')->insert([
+                    'email' => $email,
+                    'token' => Hash::make($token),
+                    'created_at' => Carbon::now()
+                ]);
+            
+
+                Mail::to($email)->send(new \App\Mail\PasswordResetMail($token));
+            
+                return response()->json(['message' => 'Password reset code sent'], 200);
+            }
+
+
+            public function resetAdminPassword(Request $request)
+        {
+            $request->validate([
+                'email' => 'required|email|exists:admin,email',
+                'token' => 'required',
+                'password' => 'required|min:6|confirmed'
+            ]);
+
+            $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        
+            if (!$record) {
+                Log::error("No token record found for email: " . $request->email);
+                return response()->json(['message' => 'Invalid token'], 400);
+            }
+
+            if (!Hash::check($request->token, $record->token)) {
+                return response()->json(['message' => 'Invalid token'], 400);
+            }
+        
+            $user = Admin::where('email', $request->email)->first();
+            if ($user) {
+                $user->password = Hash::make($request->password);
+                $user->save();
+
+                DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        
+                return response()->json(['message' => 'Password reset successfully'], 200);
+            } else {
+                return response()->json(['message' => 'User not found'], 404);
+            }
         }
-
-        $token = $admin->createToken('auth_token');
-
-        return response()->json([
-            'message' => 'User logged in successfully',
-            'access_token' => $token->plainTextToken,
-            'token_type' => 'Bearer',
-            'user' => $admin
-        ]);
-    }
-
-    
     /**
      * @OA\Post(
      *     path="/register",

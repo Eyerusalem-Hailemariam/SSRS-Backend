@@ -36,13 +36,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 //Authentication routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/verify-otp', [AuthController::class, 'VerifyOtp']);
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
-Route::post('/staff/login', [StaffAuthController::class, 'login']);
-Route::post('/admin/login', [AuthController::class, 'Adminlogin']);
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
@@ -57,13 +51,27 @@ Route::middleware('auth:sanctum')->group(function () {
 //Staff routes
 Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
 Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
+Route::post('/staff/login', [StaffAuthController::class, 'login']);
+
 //Customer routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/verify-otp', [AuthController::class, 'VerifyOtp']);
+Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('customer/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/customer/forgot-password', [AuthController::class, 'forgotPassword']);
+
+//Admin routes
+Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
+Route::post('/admin/login', [AuthController::class, 'Adminlogin']);
+Route::post('/admin/reset-password', [AuthController::class, 'resetAdminPassword']);
+Route::post('/admin/forgot-password', [AuthController::class, 'forgotAdminPassword']);
+
 //Swagger routes
 Route::get('/api/documentation', function () {
     return view('l5-swagger::index');
 });
+
 //Shift routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shifts', [ShiftController::class, 'index']);
