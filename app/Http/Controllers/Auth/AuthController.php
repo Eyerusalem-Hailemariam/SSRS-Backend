@@ -8,8 +8,15 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;  
 use App\Models\Admin;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Password;
+use App\Mail\PasswordResetMail;
+
+
 
 class AuthController extends Controller
 {
@@ -250,24 +257,80 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * @OA\Post(
-     *     path="/logout",
-     *     summary="Log out the currently authenticated user",
-     *     tags={"Auth"},
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Response(response=200, description="Successfully logged out")
-     * )
-     */
-    public function logout(Request $request)
-    {
-        $user = Auth::user();
-        if ($user) {
-            $user->currentAccessToken()->delete();
+        /**
+         * @OA\Post(
+         *     path="/logout",
+         *     summary="Log out the currently authenticated user",
+         *     tags={"Auth"},
+         *     security={{"bearerAuth":{}}},
+         *     @OA\Response(response=200, description="Successfully logged out")
+         * )
+         */
+        public function logout(Request $request)
+        {
+            $user = Auth::user();
+            if ($user) {
+                $user->currentAccessToken()->delete();
+            }
+            Auth::logout();
+            return response()->json([
+                'message' => 'Successfully logged out'
+            ]);
         }
-        Auth::logout();
-        return response()->json([
-            'message' => 'Successfully logged out'
-        ]);
-    }
+
+        public function forgotPassword(Request $request)
+        {
+            $request->validate(['email' => 'required|email|exists:users,email']);
+        
+            $email = $request->email;
+
+            DB::table('password_reset_tokens')->where('email', $email)->delete();
+        
+            $token = random_int(100000, 999999); 
+
+            DB::table('password_reset_tokens')->insert([
+                'email' => $email,
+                'token' => Hash::make($token),
+                'created_at' => Carbon::now()
+            ]);
+        
+
+            Mail::to($email)->send(new \App\Mail\PasswordResetMail($token));
+        
+            return response()->json(['message' => 'Password reset code sent'], 200);
+        }
+
+
+
+        public function resetPassword(Request $request)
+        {
+            $request->validate([
+                'email' => 'required|email|exists:users,email',
+                'token' => 'required',
+                'password' => 'required|min:6|confirmed'
+            ]);
+
+            $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        
+            if (!$record) {
+                Log::error("No token record found for email: " . $request->email);
+                return response()->json(['message' => 'Invalid token'], 400);
+            }
+
+            if (!Hash::check($request->token, $record->token)) {
+                return response()->json(['message' => 'Invalid token'], 400);
+            }
+        
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                $user->password = Hash::make($request->password);
+                $user->save();
+
+                DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        
+                return response()->json(['message' => 'Password reset successfully'], 200);
+            } else {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+        }
 }

@@ -54,8 +54,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/profile/change-password', [ProfileController::class, 'changePassword']);
     Route::put('/staff/update', [StaffAuthController::class, 'updateAccount']);  
 });
+//Staff routes
 Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
 Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
+//Customer routes
+Route::post('customer/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/customer/forgot-password', [AuthController::class, 'forgotPassword']);
 //Swagger routes
 Route::get('/api/documentation', function () {
     return view('l5-swagger::index');

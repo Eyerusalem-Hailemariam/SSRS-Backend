@@ -173,42 +173,35 @@ class StaffAuthController extends Controller
       *   )
       * )
       */
-      public function resetPassword(Request $request)
-{
-    // Validate input
-    $request->validate([
-        'email' => 'required|email|exists:staff,email',
-        'token' => 'required',
-        'password' => 'required|min:6|confirmed'
-    ]);
+        public function resetPassword(Request $request)
+    {
 
-    // Retrieve the password reset token
-    $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+        $request->validate([
+            'email' => 'required|email|exists:staff,email',
+            'token' => 'required',
+            'password' => 'required|min:6|confirmed'
+        ]);
 
-    // Log the token for debugging
-    Log::info('Database Token: ' . $record->token);
-    Log::info('Request Token: ' . $request->token);
+        $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
 
-    // Verify the token
-    if (!$record || !Hash::check($request->token, $record->token)) {
-        return response()->json(['message' => 'Invalid token'], 400);
+
+
+        if (!$record || !Hash::check($request->token, $record->token)) {
+            return response()->json(['message' => 'Invalid token'], 400);
+        }
+
+        $staff = Staff::where('email', $request->email)->first();
+        $staff->password = Hash::make($request->password);
+
+
+        Log::info('New password hash: ' . $staff->password);
+
+        $staff->save();
+
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json(['message' => 'Password reset successfully'], 200);
     }
-
-    // Find the staff and update the password
-    $staff = Staff::where('email', $request->email)->first();
-    $staff->password = Hash::make($request->password);
-
-    // Log the new password for debugging (hashed)
-    Log::info('New password hash: ' . $staff->password);
-
-    // Save the new password
-    $staff->save();
-
-    // Delete the token after use
-    DB::table('password_reset_tokens')->where('email', $request->email)->delete();
-
-    return response()->json(['message' => 'Password reset successfully'], 200);
-}
 
       
 
