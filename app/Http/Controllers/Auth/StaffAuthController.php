@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Password;
 use Carbon\Carbon;
 use App\Mail\PasswordResetMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StaffAuthController extends Controller
 {
@@ -117,26 +118,29 @@ class StaffAuthController extends Controller
       *   )
       * )
       */
- 
-     public function forgotPassword(Request $request)
-     {
-         $request->validate(['email' => 'required|email|exists:staff,email']);
- 
-         $email = $request->email;
-     
-         DB::table('password_reset_tokens')->where('email', $email)->delete();
- 
-         $token = Str::random(60);
-         DB::table('password_reset_tokens')->insert([
-             'email' => $request->email,
-             'token' => Hash::make($token), 
-             'created_at' => Carbon::now()
-         ]);
-     
-         Mail::to($request->email)->send(new \App\Mail\PasswordResetMail($token));
-     
-         return response()->json(['message' => 'Password reset link sent'], 200);
-     }
+
+      public function forgotPassword(Request $request)
+      {
+          $request->validate(['email' => 'required|email|exists:staff,email']);
+      
+          $email = $request->email;
+
+          DB::table('password_reset_tokens')->where('email', $email)->delete();
+      
+          $token = random_int(100000, 999999); 
+
+          DB::table('password_reset_tokens')->insert([
+              'email' => $email,
+              'token' => Hash::make($token),
+              'created_at' => Carbon::now()
+          ]);
+      
+
+          Mail::to($email)->send(new \App\Mail\PasswordResetMail($token));
+      
+          return response()->json(['message' => 'Password reset code sent'], 200);
+      }
+      
      
          /**
       * @OA\Post(
@@ -169,28 +173,44 @@ class StaffAuthController extends Controller
       *   )
       * )
       */
-     public function resetPassword(Request $request)
-     {
-         $request->validate([
-             'email' => 'required|email|exists:staff,email',
-             'token' => 'required',
-             'password' => 'required|min:6|confirmed'
-         ]);
- 
-         $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
- 
-         if (!$record || !Hash::check($request->token, $record->token)) {
-             return response()->json(['message' => 'Invalid token'], 400);
-         }
- 
-         $staff = Staff::where('email', $request->email)->first();
-         $staff->password = Hash::make($request->password); 
-         $staff->save();
- 
-         DB::table('password_reset_tokens')->where('email', $request->email)->delete();
- 
-         return response()->json(['message' => 'Password reset successfully'], 200);
-     }
+      public function resetPassword(Request $request)
+{
+    // Validate input
+    $request->validate([
+        'email' => 'required|email|exists:staff,email',
+        'token' => 'required',
+        'password' => 'required|min:6|confirmed'
+    ]);
+
+    // Retrieve the password reset token
+    $record = DB::table('password_reset_tokens')->where('email', $request->email)->first();
+
+    // Log the token for debugging
+    Log::info('Database Token: ' . $record->token);
+    Log::info('Request Token: ' . $request->token);
+
+    // Verify the token
+    if (!$record || !Hash::check($request->token, $record->token)) {
+        return response()->json(['message' => 'Invalid token'], 400);
+    }
+
+    // Find the staff and update the password
+    $staff = Staff::where('email', $request->email)->first();
+    $staff->password = Hash::make($request->password);
+
+    // Log the new password for debugging (hashed)
+    Log::info('New password hash: ' . $staff->password);
+
+    // Save the new password
+    $staff->save();
+
+    // Delete the token after use
+    DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+    return response()->json(['message' => 'Password reset successfully'], 200);
+}
+
+      
 
      /**
       * @OA\Put(

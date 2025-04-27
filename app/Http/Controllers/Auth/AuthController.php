@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Mail;
+use App\Models\Admin;
 
 class AuthController extends Controller
 {
@@ -34,28 +35,45 @@ class AuthController extends Controller
     {
         $request->validate([
             'name' => 'required|string',
-            'email' => 'required|email|unique:users',
+            'email' => 'required|email|unique:admin',
             'password' => 'required|min:6',
         ]);
-
-        
-
-        $otp = rand(100000, 999999);
-
-        $user = User::create([
+    
+        $admin = Admin::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
             'role' => 'admin',
-            'is_verified' => false,
-            'otp' => $otp,
-            'otp_expired_at' => now()->addMinutes(10)
         ]);
-
-        Mail::to($request->email)->send(new \App\Mail\SendOtpMail($otp));
-        return response()->json($user, 201);
+    
+        return response()->json($admin, 201); 
     }
 
+    
+    public function Adminlogin(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $admin = Admin::where('email', $request->email)->first();
+
+        if (!$admin || !Hash::check($request->password, $admin->password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        $token = $admin->createToken('auth_token');
+
+        return response()->json([
+            'message' => 'User logged in successfully',
+            'access_token' => $token->plainTextToken,
+            'token_type' => 'Bearer',
+            'user' => $admin
+        ]);
+    }
+
+    
     /**
      * @OA\Post(
      *     path="/register",

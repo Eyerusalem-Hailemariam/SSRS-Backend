@@ -42,6 +42,7 @@ Route::post('/verify-otp', [AuthController::class, 'VerifyOtp']);
 Route::post('/logout', [AuthController::class, 'logout']);
 Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 Route::post('/staff/login', [StaffAuthController::class, 'login']);
+Route::post('/admin/login', [AuthController::class, 'Adminlogin']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
@@ -51,10 +52,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/profile', [AuthController::class, 'getUserProfile']);
     Route::post('/staff/change-password', [StaffAuthController::class, 'changePassword']);
     Route::post('/user/profile/change-password', [ProfileController::class, 'changePassword']);
-    Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
-    Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
     Route::put('/staff/update', [StaffAuthController::class, 'updateAccount']);  
 });
+Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
+Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
 //Swagger routes
 Route::get('/api/documentation', function () {
     return view('l5-swagger::index');
