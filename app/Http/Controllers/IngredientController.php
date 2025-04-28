@@ -21,7 +21,7 @@ class IngredientController extends Controller
     // Validate the incoming request data
     $validatedData = $request->validate([
         'ingredients' => 'required|array', // Expect an array of ingredients
-        'ingredients.*.name' => 'required|string|max:255', // Validate each ingredient's name
+        'ingredients.*.name' => 'required|string', // Validate each ingredient's name
         'ingredients.*.calorie' => 'required|numeric|min:0', // Validate each ingredient's calorie
     ]);
 
@@ -51,7 +51,7 @@ class IngredientController extends Controller
         $ingredient = Ingredient::findOrFail($id);
 
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string',
             'calorie' => 'required|numeric|min:0', 
            ]);
 
