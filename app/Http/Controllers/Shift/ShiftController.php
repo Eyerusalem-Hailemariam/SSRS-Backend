@@ -71,7 +71,50 @@ class ShiftController extends Controller
         return response()->json(['shifts' => $shifts], 200);
     }
 
+    //i want the admin to get the shift by the staff id
+    /**
+     * @OA\Get(
+     *     path="/api/shifts/{staff_id}",
+     *     summary="Get all shifts for a specific staff member",
+     *     tags={"Shifts"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the staff member",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Shifts retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Shift")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function getShiftsByStaffId($staff_id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
+        $shifts = Shift::where('staff_id', $staff_id)->get();
+
+        if ($shifts->isEmpty()) {
+            return response()->json(['message' => 'No shifts found for this staff member'], 404);
+        }
+
+        return response()->json($shifts, 200);
+    }
+
+    
     /**
      * @OA\Post(
      *     path="/api/shifts",

@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Password;
 use Carbon\Carbon;
 use App\Mail\PasswordResetMail;
 use Illuminate\Support\Facades\DB;
+use App\Models\Shift;
 
 
 
@@ -199,6 +200,125 @@ class AdminController extends Controller
         $staff->update($request->all());
 
         return response()->json(['message' => 'Staff updated successfully', 'staff' => $staff], 200);
+    }
+
+    //admin can see the list of all staff
+    /**
+     * @OA\Get(
+     *     path="/api/admin/staff",
+     *     tags={"Admin"},
+     *     summary="Get all staff members",
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of staff members",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Staff")
+     *         )
+     *     )
+     * )
+     */
+    public function getAllStaff()
+    {
+        $staff = Staff::all();
+
+        return response()->json($staff, 200);
+    }
+    /**
+     * @OA\Get(
+     *     path="/api/admin/staff/{id}",
+     *     tags={"Admin"},
+     *     summary="Get a staff member by ID",
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the staff member to retrieve",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Staff member details",
+     *         @OA\JsonContent(ref="#/components/schemas/Staff")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Staff member not found"
+     *     )
+     * )
+     */
+    public function getStaffById($id)
+    {
+        $staff = Staff::find($id);
+
+        if (!$staff) {
+            return response()->json(['message' => 'Staff not found'], 404);
+        }
+
+        return response()->json($staff, 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/admin/staff/role/{role}",
+     *     tags={"Admin"},
+     *     summary="Get staff members by role",
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="role",
+     *         in="path",
+     *         required=true,
+     *         description="Role of the staff members to retrieve",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of staff members with the specified role",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Staff")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No staff members found with the specified role"
+     *     )
+     * )
+     */
+    public function getStaffByRole($role)
+    {
+        $staff = Staff::where('role', $role)->get();
+
+        if ($staff->isEmpty()) {
+            return response()->json(['message' => 'No staff found with this role'], 404);
+        }
+
+        return response()->json($staff, 200);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/admin/customers",
+     *     tags={"Admin"},
+     *     summary="Get all customers",
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of customers",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Customer")
+     *         )
+     *     )
+     * )
+     */
+    public function getAllCustomers()
+    {
+        $customers = DB::table('users')->where('role', 'customer')->get();
+
+        return response()->json($customers, 200);
     }
 }
 
