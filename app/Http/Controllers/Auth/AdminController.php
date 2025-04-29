@@ -202,7 +202,7 @@ class AdminController extends Controller
         return response()->json(['message' => 'Staff updated successfully', 'staff' => $staff], 200);
     }
 
-    //admin can see the list of all staff
+
     /**
      * @OA\Get(
      *     path="/api/admin/staff",

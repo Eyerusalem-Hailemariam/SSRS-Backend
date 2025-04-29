@@ -43,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/admin/updateStaff', [AdminController::class, 'updateStaff']);
         Route::Delete('/admin/staff', [AdminController::class, 'deleteStaff']);
         Route::get('/admin/staff/{id}/shifts', [ShiftController::class, 'getShiftsByStaffId']);
+        Route::get('/admin/staff/shifts', [ShiftController::class, 'getAllShifts']);
     });
     Route::get('/user/profile', [ProfileController::class, 'getUserProfile']);
     Route::post('/staff/change-password', [StaffAuthController::class, 'changePassword']);
