@@ -17,7 +17,7 @@ class TagController extends Controller
     {
         // Validate the incoming request data
         $request->validate([
-            'name' => 'required|string|max:255' // Expect a comma-separated string of tag names
+            'name' => 'required|string' // Expect a comma-separated string of tag names
         ]);
 
         // Split the comma-separated names into an array
@@ -46,8 +46,8 @@ class TagController extends Controller
     {
         // Validate the incoming request data
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'name' => 'required|string'
+            
         ]);
 
         // Update the tag with the validated data
