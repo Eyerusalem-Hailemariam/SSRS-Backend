@@ -14,8 +14,11 @@ class OrderItem extends Model
         'menu_item_id',
         'quantity',
         'total_price',
+        'excluded_ingredients',
     ];
-
+    protected $casts = [
+        'excluded_ingredients' => 'array', // Cast excluded_ingredients to an array
+    ];
     public function order()
     {
         return $this->belongsTo(Order::class);
