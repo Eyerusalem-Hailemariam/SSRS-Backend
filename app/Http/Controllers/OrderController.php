@@ -60,7 +60,6 @@ class OrderController extends Controller
             }
         }
 
-        $tx_ref = 'CHAPA-' . Str::uuid();
 
         $customerId = auth()->check() ? auth()->id() : null;
 
@@ -74,7 +73,6 @@ class OrderController extends Controller
             'customer_temp_id' => $validatedData['customer_temp_id'],
             'order_type' => $validatedData['order_type'],
             'payment_status' => 'pending', // Payment is handled separately
-            'tx_ref' => $tx_ref, 
         ]);
 
         $totalAmount = 0;
@@ -96,24 +94,12 @@ class OrderController extends Controller
         $table->update(['table_status' => 'occupied']);
         }
 
-        
-
-        Payment::create([
-            'tx_ref' => $tx_ref,
-            'amount' => $totalAmount,
-            'currency' => 'ETB',
-            'status' => 'pending',
-            'email' => $request->email ?? 'guest@example.com',
-            'first_name' => $request->first_name ?? 'Guest',
-            'last_name' => $request->last_name ?? 'User',
-            'phone_number' => $request->phone_number ?? '0000000000',
-        ]);
 
 // Add tx_ref to the response to be used in payment initialization
         return response()->json([
             'message' => 'Order placed successfully. Proceed to payment.',
             'order' => $order->load('orderItems.menuItem'),
-            'tx_ref' => $tx_ref
+            'order_id' => $order->id
         ], 201);
 
 
