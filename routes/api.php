@@ -42,6 +42,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
         Route::put('/admin/updateStaff', [AdminController::class, 'updateStaff']);
         Route::Delete('/admin/staff', [AdminController::class, 'deleteStaff']);
+        Route::get('/admin/staff/{id}/shifts', [ShiftController::class, 'getShiftsByStaffId']);
+        Route::get('/admin/staff/shifts', [ShiftController::class, 'getAllShifts']);
     });
     Route::get('/user/profile', [ProfileController::class, 'getUserProfile']);
     Route::post('/staff/change-password', [StaffAuthController::class, 'changePassword']);
@@ -66,6 +68,10 @@ Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 Route::post('/admin/login', [AuthController::class, 'Adminlogin']);
 Route::post('/admin/reset-password', [AuthController::class, 'resetAdminPassword']);
 Route::post('/admin/forgot-password', [AuthController::class, 'forgotAdminPassword']);
+Route::get('/admin/getStaff', [AdminController::class, 'getAllStaff']);
+Route::get('/admin/staff/{id}', [AdminController::class, 'getStaffById']);
+Route::get('/admin/staff/role/{role}', [AdminController::class, 'getStaffByRole']);
+Route::get('/admin/getCustomers', [AdminController::class, 'getAllCustomers']); 
 
 //Swagger routes
 Route::get('/api/documentation', function () {
