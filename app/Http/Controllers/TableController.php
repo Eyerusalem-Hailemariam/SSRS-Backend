@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Table;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TableController extends Controller
 {
@@ -15,7 +16,7 @@ class TableController extends Controller
             $tables = Table::all(['table_number', 'qr_code', 'table_status']);
             return response()->json($tables, 200);
         } catch (\Exception $e) {
-            \Log::error('Error fetching tables: ' . $e->getMessage());
+            Log::error('Error fetching tables: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error fetching tables',
                 'error' => $e->getMessage()
