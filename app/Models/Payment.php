@@ -18,6 +18,7 @@ class Payment extends Model
         'first_name',
         'last_name',
         'phone_number',
+        'order_id',
     ];
 
     public function order()
