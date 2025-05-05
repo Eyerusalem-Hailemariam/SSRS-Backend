@@ -71,7 +71,85 @@ class ShiftController extends Controller
         return response()->json(['shifts' => $shifts], 200);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/shifts/{staff_id}",
+     *     summary="Get all shifts for a specific staff member",
+     *     tags={"Shifts"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *         name="staff_id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the staff member",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Shifts retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Shift")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function getShiftsByStaffId($staff_id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
+        $shifts = Shift::where('staff_id', $staff_id)->get();
+
+        if ($shifts->isEmpty()) {
+            return response()->json(['message' => 'No shifts found for this staff member'], 404);
+        }
+
+        return response()->json($shifts, 200);
+    }
+    
+
+    /**
+     * @OA\Get(
+     *     path="/api/shifts/all",
+     *     summary="Get all shifts",
+     *     tags={"Shifts"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Shifts retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Shift")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized"
+     *     )
+     * )
+     */
+    public function getAllShifts()
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $shifts = Shift::all();
+
+        if ($shifts->isEmpty()) {
+            return response()->json(['message' => 'No shifts found'], 404);
+        }
+
+        return response()->json($shifts, 200);
+    }
+
+    
     /**
      * @OA\Post(
      *     path="/api/shifts",

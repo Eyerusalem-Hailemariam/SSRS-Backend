@@ -72,7 +72,7 @@ class AuthController extends Controller
                     $token = $admin->createToken('auth_token');
 
                     return response()->json([
-                        'message' => 'User logged in successfully',
+                        'message' => 'Admin logged in successfully',
                         'access_token' => $token->plainTextToken,
                         'token_type' => 'Bearer',
                         'user' => $admin
