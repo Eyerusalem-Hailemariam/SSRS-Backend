@@ -67,6 +67,7 @@ class ChapaController extends Controller
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'phone_number' => 'required|string',
+            'order_id' => 'required|exists:orders,id',
         ]);
 
  
@@ -115,6 +116,7 @@ class ChapaController extends Controller
                 'last_name' => $request->last_name,
                 'phone_number' => $request->phone_number,
                 'status' => 'pending',
+                'order_id' => $request->order_id,
             ]);
             $responseData = $chapaResponse->json();
 
@@ -188,7 +190,6 @@ class ChapaController extends Controller
             if (isset($data['status']) && $data['status'] == 'success') {
                 Payment::where('tx_ref', $reference)->update(['status' => 'completed']);
             
-                // Update order payment status
                 Order::whereHas('payment', function ($query) use ($reference) {
                     $query->where('tx_ref', $reference);
                 })->update(['payment_status' => 'paid']);
