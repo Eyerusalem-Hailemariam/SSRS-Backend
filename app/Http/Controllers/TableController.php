@@ -5,14 +5,23 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Table;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TableController extends Controller
 {
     // Retrieve all tables
     public function index()
     {
-        $tables = Table::all(['table_number', 'qr_code', 'table_status']);
-        return response()->json($tables, 200);
+        try {
+            $tables = Table::all(['table_number', 'qr_code', 'table_status']);
+            return response()->json($tables, 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching tables: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error fetching tables',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
     // Store new tables
     public function store(Request $request)

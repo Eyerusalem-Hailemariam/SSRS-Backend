@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Models\Staff;
 
 
 class ChapaController extends Controller
@@ -67,6 +68,7 @@ class ChapaController extends Controller
             'first_name' => 'required|string',
             'last_name' => 'required|string',
             'phone_number' => 'required|string',
+            'order_id' => 'required|exists:orders,id',
         ]);
 
  
@@ -115,6 +117,7 @@ class ChapaController extends Controller
                 'last_name' => $request->last_name,
                 'phone_number' => $request->phone_number,
                 'status' => 'pending',
+                'order_id' => $request->order_id,
             ]);
             $responseData = $chapaResponse->json();
 
@@ -187,14 +190,28 @@ class ChapaController extends Controller
  
             if (isset($data['status']) && $data['status'] == 'success') {
                 Payment::where('tx_ref', $reference)->update(['status' => 'completed']);
-            
-                // Update order payment status
-                Order::whereHas('payment', function ($query) use ($reference) {
+
+                // Update the order status to 'paid'
+                $order = Order::whereHas('payment', function ($query) use ($reference) {
+                
                     $query->where('tx_ref', $reference);
-                })->update(['payment_status' => 'paid']);
-            
+                })->first();
+    
+                if ($order) {
+                    $order->update(['payment_status' => 'paid']);
+    
+                    // Calculate tip if the amount paid exceeds the order total price
+                    $payment = Payment::where('tx_ref', $reference)->first();
+                    $tip = $payment->amount - $order->total_price;
+    
+                    if ($tip > 0) {
+                        // Distribute the tip to chefs who are clocked in
+                        $this->distributeTipToChefs($tip);
+                    }
+                }
+    
                 return response()->json(['status' => 'success', 'message' => 'Payment completed successfully']);
-            } else {
+             } else {
                 Payment::where('tx_ref', $reference)->update(['status' => 'failed']);
             
                 return response()->json(['status' => 'failed', 'message' => 'Payment failed']);
@@ -207,6 +224,38 @@ class ChapaController extends Controller
             ], 500);
         }
     }
+
+
+private function distributeTipToChefs($tip)
+{
+    // Get the current time
+    $currentTime = now();
+
+    // Fetch chefs who are clocked in but not clocked out
+    $chefs = Staff::where('role', 'chef')
+        ->whereHas('attendance', function ($query) use ($currentTime) {
+            $query->where('mode', 'clock_in')
+                ->where('scanned_at', '<=', $currentTime)
+                ->whereDoesntHave('attendance', function ($subQuery) {
+                    $subQuery->where('mode', 'clock_out');
+                });
+        })
+        ->get();
+
+    if ($chefs->isEmpty()) {
+        Log::info('No chefs are clocked in to distribute the tip.');
+        return;
+    }
+
+    // Calculate the tip share for each chef
+    $tipPerChef = $tip / $chefs->count();
+
+    // Distribute the tip to each chef
+    foreach ($chefs as $chef) {
+        $chef->increment('tips', $tipPerChef);
+        Log::info("Distributed {$tipPerChef} tip to Chef ID: {$chef->id}");
+    }
+}
 }
 
 

@@ -44,6 +44,8 @@ class OrderController extends Controller
             'order_items' => 'required|array',
             'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
             'order_items.*.quantity' => 'required|integer|min:1',
+            'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
+            'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
             'customer_ip' => 'required|ip',
             'customer_temp_id' => 'required|string|max:255',
             'order_type' => 'required|in:dine-in,remote', // Specify order type
@@ -60,7 +62,6 @@ class OrderController extends Controller
             }
         }
 
-        $tx_ref = 'CHAPA-' . Str::uuid();
 
         $customerId = auth()->check() ? auth()->id() : null;
 
@@ -74,7 +75,6 @@ class OrderController extends Controller
             'customer_temp_id' => $validatedData['customer_temp_id'],
             'order_type' => $validatedData['order_type'],
             'payment_status' => 'pending', // Payment is handled separately
-            'tx_ref' => $tx_ref, 
         ]);
 
         $totalAmount = 0;
@@ -84,6 +84,7 @@ class OrderController extends Controller
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
                 'total_price' => $menuItem->price* $item['quantity'],
+                'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : null, // Store excluded ingredients as JSON
             ]);
             $order->orderItems()->save($orderItem);
             $totalAmount += $menuItem->price * $item['quantity'];
@@ -96,24 +97,12 @@ class OrderController extends Controller
         $table->update(['table_status' => 'occupied']);
         }
 
-        
-
-        Payment::create([
-            'tx_ref' => $tx_ref,
-            'amount' => $totalAmount,
-            'currency' => 'ETB',
-            'status' => 'pending',
-            'email' => $request->email ?? 'guest@example.com',
-            'first_name' => $request->first_name ?? 'Guest',
-            'last_name' => $request->last_name ?? 'User',
-            'phone_number' => $request->phone_number ?? '0000000000',
-        ]);
 
 // Add tx_ref to the response to be used in payment initialization
         return response()->json([
             'message' => 'Order placed successfully. Proceed to payment.',
             'order' => $order->load('orderItems.menuItem'),
-            'tx_ref' => $tx_ref
+            'order_id' => $order->id
         ], 201);
 
 
