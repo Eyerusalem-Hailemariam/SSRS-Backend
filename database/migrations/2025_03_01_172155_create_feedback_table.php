@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('feedback', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('customer_id')->nullable(); // For registered customers
+            $table->string('temp_id')->nullable(); // For unregistered customers
+            $table->text('message')->change(); // Ensure the message column is a text type
+
             $table->timestamps();
         });
     }

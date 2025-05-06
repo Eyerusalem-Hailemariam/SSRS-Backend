@@ -17,6 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('menu_item_id');
             $table->integer('quantity');
             $table->decimal('total_price', 8, 2);
+            $table->json('excluded_ingredients')->nullable(); // Store excluded ingredients as JSON
             $table->timestamps();
 
             $table->foreign('order_id')

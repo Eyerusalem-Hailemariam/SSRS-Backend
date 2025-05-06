@@ -44,6 +44,8 @@ class OrderController extends Controller
             'order_items' => 'required|array',
             'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
             'order_items.*.quantity' => 'required|integer|min:1',
+            'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
+            'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
             'customer_ip' => 'required|ip',
             'customer_temp_id' => 'required|string|max:255',
             'order_type' => 'required|in:dine-in,remote', // Specify order type
@@ -82,6 +84,7 @@ class OrderController extends Controller
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
                 'total_price' => $menuItem->price* $item['quantity'],
+                'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : null, // Store excluded ingredients as JSON
             ]);
             $order->orderItems()->save($orderItem);
             $totalAmount += $menuItem->price * $item['quantity'];
