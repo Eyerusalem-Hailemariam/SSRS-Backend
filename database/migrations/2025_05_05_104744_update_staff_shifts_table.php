@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-            $table->string('name')->after('id'); // e.g. Morning, Evening
-            $table->time('start_time')->after('name');
-            $table->time('end_time')->after('start_time');
+        // Modify the existing staff_shifts table
+        Schema::table('staff_shifts', function (Blueprint $table) {
+            
+            $table->enum('type', ['overtime', 'regular'])->default('regular'); // Type of shift (overtime or regular)
+            
         });
     }
 
@@ -23,8 +24,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-
-        });
+        // Remove foreign keys and drop the columns if rolling back
+       
     }
 };

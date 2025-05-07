@@ -34,6 +34,12 @@ class Staff extends Authenticatable implements CanResetPassword
         'name', 'staff_id', 'email', 'password', 'role', 'total_salary', 'overtime_rate', 'tips'
     ];
 
+    public function shifts()
+    {
+        return $this->belongsToMany(Shift::class);
+    }
+
+
     protected static function boot()
     {
         parent::boot();
@@ -46,9 +52,7 @@ class Staff extends Authenticatable implements CanResetPassword
     protected $hidden = [
         'password'
     ];
-
-    public function attendance()
-    {
-        return $this->hasMany(Attendance::class, 'staff_id');
+    public function staffShifts() {
+        return $this->hasMany(StaffShift::class);
     }
 }
