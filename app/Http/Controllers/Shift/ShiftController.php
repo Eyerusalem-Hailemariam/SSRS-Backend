@@ -4,371 +4,79 @@ namespace App\Http\Controllers\Shift;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Shift;
-use App\Models\Staff;
-use App\Notifications\ShiftUpdated;
-/**
- * @OA\Tag(
- *     name="Shifts",
- *     description="Operations related to shift management"
- * )
- */
+use Carbon\Carbon;
 
 class ShiftController extends Controller
 {
-
-    public function __construct()
+    public function store(Request $request)
     {
-        $this->middleware('auth:sanctum');
+        // Validate the incoming request data
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i',
+        ]);
+
+        // Check if there is an existing shift that overlaps with the new shift's time
+        $existingShift = Shift::where('start_time', '<', $request->end_time)
+            ->where('end_time', '>', $request->start_time)
+            ->first();
+
+        if ($existingShift) {
+            return response()->json([
+                'message' => 'The shift times overlap with an existing shift.'
+            ], 409); // Conflict response
+        }
+
+        // If no conflict, create the new shift
+        $shift = Shift::create($request->all());
+
+        return response()->json($shift, 201);
     }
 
-       /**
-     * @OA\Get(
-     *     path="/api/shifts",
-     *     summary="Get all shifts for the authenticated staff member",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Shifts retrieved successfully",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(
-     *                 type="object",
-     *                 @OA\Property(property="id", type="integer"),
-     *                 @OA\Property(property="date", type="string", format="date"),
-     *                 @OA\Property(property="start_time", type="string", format="time"),
-     *                 @OA\Property(property="end_time", type="string", format="time")
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     )
-     * )
-     */
-    public function index()
-    {
-        $staff = Auth::user();
-
-        if (!$staff) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-
-        $shifts = Shift::where('staff_id', $staff->id)->get()->map(function ($shift) {
-            return [
-                'id' => $shift->id,
-                'date' => date("Y-m-d", strtotime($shift->start_time)), 
-                'start_time' => date("H:i:s", strtotime($shift->start_time)),
-                'end_time' => date("H:i:s", strtotime($shift->end_time)),
-            ];
-        });
-
-        return response()->json(['shifts' => $shifts], 200);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/shifts/{staff_id}",
-     *     summary="Get all shifts for a specific staff member",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\Parameter(
-     *         name="staff_id",
-     *         in="path",
-     *         required=true,
-     *         description="ID of the staff member",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Shifts retrieved successfully",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/Shift")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     )
-     * )
-     */
-    public function getShiftsByStaffId($staff_id)
-    {
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $shifts = Shift::where('staff_id', $staff_id)->get();
-
-        if ($shifts->isEmpty()) {
-            return response()->json(['message' => 'No shifts found for this staff member'], 404);
-        }
-
-        return response()->json($shifts, 200);
-    }
-    
-
-    /**
-     * @OA\Get(
-     *     path="/api/shifts/all",
-     *     summary="Get all shifts",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="Shifts retrieved successfully",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/Shift")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     )
-     * )
-     */
-    public function getAllShifts()
-    {
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $shifts = Shift::all();
-
-        if ($shifts->isEmpty()) {
-            return response()->json(['message' => 'No shifts found'], 404);
-        }
-
-        return response()->json($shifts, 200);
-    }
-
-    
-    /**
-     * @OA\Post(
-     *     path="/api/shifts",
-     *     summary="Create a new shift",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"staff_id", "start_date", "end_date", "start_time", "end_time"},
-     *             @OA\Property(property="staff_id", type="integer", example=1),
-     *             @OA\Property(property="start_date", type="string", format="date", example="2024-04-10"),
-     *             @OA\Property(property="end_date", type="string", format="date", example="2024-04-12"),
-     *             @OA\Property(property="start_time", type="string", format="time", example="09:00:00"),
-     *             @OA\Property(property="end_time", type="string", format="time", example="17:00:00"),
-     *             @OA\Property(property="is_overtime", type="boolean", example=false)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=201,
-     *         description="Shift created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Shift")
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     ),
-     *     @OA\Response(
-     *         response=409,
-     *         description="Shift conflict detected"
-     *     )
-     * )
-     */
-    
-     public function store(Request $request)
-     {
-         if (Auth::user()->role !== 'admin') {
-             return response()->json(['message' => 'Unauthorized'], 403);
-         }
-     
-         $request->validate([
-             'staff_id' => 'required|exists:staff,id',
-             'start_date' => 'required|date',
-             'end_date' => 'required|date|after_or_equal:start_date',
-             'start_time' => 'required|date_format:H:i:s',
-             'end_time' => 'required|date_format:H:i:s',
-             'is_overtime' => 'nullable|boolean',
-         ]);
-     
-         $startDateTime = $request->start_date . ' ' . $request->start_time;
-         $endDateTime = $request->end_date . ' ' . $request->end_time;
-     
-         if (strtotime($endDateTime) <= strtotime($startDateTime)) {
-             return response()->json(['message' => 'End datetime must be after start datetime.'], 422);
-         }
-     
-         $conflictingShift = Shift::where('staff_id', $request->staff_id)
-             ->where(function ($query) use ($startDateTime, $endDateTime) {
-                 $query->where(function ($q) use ($startDateTime, $endDateTime) {
-                     $q->whereRaw("CONCAT(start_date, ' ', start_time) < ?", [$endDateTime])
-                       ->whereRaw("CONCAT(end_date, ' ', end_time) > ?", [$startDateTime]);
-                 });
-             })
-             ->exists();
-     
-         if ($conflictingShift) {
-             return response()->json(['message' => 'Shift conflict detected.'], 409);
-         }
-     
-         $shift = Shift::create([
-             'staff_id' => $request->staff_id,
-             'start_date' => $request->start_date,
-             'end_date' => $request->end_date,
-             'start_time' => $request->start_time,
-             'end_time' => $request->end_time,
-             'is_overtime' => $request->has('is_overtime') ? (bool) $request->is_overtime : false,
-         ]);
-     
-         $staff = Staff::find($request->staff_id);
-         if ($staff) {
-             $staff->notify(new ShiftUpdated($shift, 'created'));
-         }
-     
-         return response()->json($shift, 201);
-     }
-     
-    
-  /**
-     * @OA\Put(
-     *     path="/api/shifts/{id}",
-     *     summary="Update an existing shift",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="Shift ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             required={"start_date", "end_date", "start_time", "end_time"},
-     *             @OA\Property(property="start_date", type="string", format="date", example="2024-04-10"),
-     *             @OA\Property(property="end_date", type="string", format="date", example="2024-04-12"),
-     *             @OA\Property(property="start_time", type="string", format="time", example="09:00:00"),
-     *             @OA\Property(property="end_time", type="string", format="time", example="17:00:00"),
-     *             @OA\Property(property="is_overtime", type="boolean", example=false)
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Shift updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Shift")
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Shift not found"
-     *     )
-     * )
-     */
     public function update(Request $request, $id)
     {
-        $shift = Shift::find($id);
+        // Validate only the name
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
     
-        if (!$shift) {
-            return response()->json(['message' => 'Shift not found'], 404);
+        // Find the shift
+        $shift = Shift::findOrFail($id);
+    
+        // Check if the name is the same
+        if ($request->name === $shift->name) {
+            return response()->json([
+                'message' => 'The name is already up to date.',
+            ], 200);
         }
     
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        // Update the name
+        $shift->update([
+            'name' => $request->name,
+        ]);
     
-        $rules = [
-            'start_date' => 'sometimes|date',
-            'end_date' => 'sometimes|date|after_or_equal:start_date',
-            'start_time' => 'sometimes|date_format:H:i:s',
-            'end_time' => 'sometimes|date_format:H:i:s',
-            'is_overtime' => 'nullable|boolean',
-        ];
-    
-        $request->validate($rules);
-    
-
-        if ($request->has(['start_date', 'start_time', 'end_date', 'end_time'])) {
-            $startDateTime = $request->start_date . ' ' . $request->start_time;
-            $endDateTime = $request->end_date . ' ' . $request->end_time;
-    
-            if (strtotime($endDateTime) <= strtotime($startDateTime)) {
-                return response()->json(['message' => 'End datetime must be after start datetime.'], 422);
-            }
-    
-            $conflictingShift = Shift::where('staff_id', $shift->staff_id)
-                ->where('id', '!=', $shift->id)
-                ->where(function ($query) use ($startDateTime, $endDateTime) {
-                    $query->whereRaw("CONCAT(start_date, ' ', start_time) < ?", [$endDateTime])
-                          ->whereRaw("CONCAT(end_date, ' ', end_time) > ?", [$startDateTime]);
-                })
-                ->exists();
-    
-            if ($conflictingShift) {
-                return response()->json(['message' => 'Shift conflict detected.'], 409);
-            }
-        }
-    
-        $shift->update($request->only([
-            'start_date', 'end_date', 'start_time', 'end_time', 'is_overtime'
-        ]));
-    
-        $staff = Staff::find($shift->staff_id);
-        if ($staff) {
-            $staff->notify(new ShiftUpdated($shift, 'updated'));
-        }
-    
-        return response()->json(['message' => 'Shift updated successfully', 'shift' => $shift], 200);
+        return response()->json([
+            'message' => 'Shift name updated successfully.',
+            'shift' => $shift,
+        ], 200);
     }
     
-
-
-    /**
-     * @OA\Delete(
-     *     path="/api/shifts/{id}",
-     *     summary="Delete a shift",
-     *     tags={"Shifts"},
-     *     security={{"sanctum": {}}},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         required=true,
-     *         description="Shift ID",
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Shift deleted successfully"
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Unauthorized"
-     *     )
-     * )
-     */
-
+    
+    public function index()
+    {
+        $shifts = Shift::all();
+        return response()->json($shifts, 200);
+    }
+    
     public function destroy($id)
     {
-        if (Auth::user()->role !== 'admin') {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
         $shift = Shift::findOrFail($id);
         $shift->delete();
-
-        return response()->json(['message' => 'Shift deleted successfully']);
+        return response()->json(null, 204);
     }
 
-    
+
+
 }

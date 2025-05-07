@@ -25,15 +25,16 @@ class Shift extends Model
     public $timestamps = false;
     use HasFactory;
     protected $fillable = [
-        'staff_id',
-        'start_date',
-        'end_date',
+        'name',
         'start_time',
         'end_time',
-        'is_overtime',
+        
     ];
     public function staff() {
         return $this->belongsTo(Staff::class, 'staff_id');
+    }
+    public function staffShifts() {
+        return $this->hasMany(StaffShift::class);
     }
 }
 

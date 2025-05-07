@@ -73,7 +73,7 @@ class StaffAuthController extends Controller
      public function changePassword(Request $request) {
          $request->validate([
              'current_password' => 'required',
-             'new_password' => 'required|min:6',
+             'new_password' => 'required|min:6|confirmed',
          ]);
  
          $staff = auth()->user();

@@ -6,25 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('shifts', function (Blueprint $table) {
-            $table->string('name')->after('id'); // e.g. Morning, Evening
-            $table->time('start_time')->after('name');
-            $table->time('end_time')->after('start_time');
+            $table->dropColumn(['start_date', 'end_date']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('shifts', function (Blueprint $table) {
-
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
         });
     }
 };
+
