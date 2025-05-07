@@ -96,7 +96,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
-Route::put('/staff-shifts/{id}', [StaffShiftController::class, 'update']);
+
 
 // Payment routes
 Route::get('callback/{reference}', [ChapaController::class, 'callback'])->name('callback.api');
@@ -105,7 +105,7 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
-    Route::post('/scan', [AttendanceController::class, 'scan']);
+        Route::post('/scan', [AttendanceController::class, 'scan']);
     });
 });
 
