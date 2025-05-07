@@ -15,6 +15,7 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\MenuTagController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\Attendance\AttendanceController;
 use App\Models\Staff;
 use App\Http\Controllers\Shift\ShiftController;
@@ -204,4 +205,15 @@ Route::prefix('images')->group(function () {
     Route::get('/{id}', [ImageController::class, 'show']); // Get a specific image
     Route::put('/{id}', [ImageController::class, 'update']); // Update a specific image
     Route::delete('/{id}', [ImageController::class, 'destroy']); // Delete a specific image
+});
+
+
+//feedback routes
+
+Route::prefix('feedbacks')->group(function () {
+    Route::get('/', [FeedbackController::class, 'index']); // Get all feedbacks
+    Route::post('/', [FeedbackController::class, 'store']); // Create a new feedback
+    Route::get('/{id}', [FeedbackController::class, 'show']); // Get a specific feedback
+    Route::put('/{id}', [FeedbackController::class, 'update']); // Update a specific feedback
+    Route::delete('/{id}', [FeedbackController::class, 'destroy']); // Delete a specific feedback
 });
