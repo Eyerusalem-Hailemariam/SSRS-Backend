@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\StaffShift;
 use App\Models\Shift;
+use App\Models\Staff;
 
 class StaffShiftController extends Controller
 {
@@ -41,6 +42,8 @@ class StaffShiftController extends Controller
             'end_time' => $endTime,
         ]);
     
+        //notification for the staff
+
         return response()->json($staffShift, 201);
     }
     

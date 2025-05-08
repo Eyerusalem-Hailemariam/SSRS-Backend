@@ -156,14 +156,46 @@ class AttendanceController extends Controller
              }
          }
      
-         Attendance::create([
+         // Create the attendance scan record
+         $attendance = Attendance::create([
              'staff_id' => $staff->id,
              'mode' => $request->mode,
              'scanned_at' => $currentTime,
+             'status' => 'incomplete', // Set status as 'incomplete' initially
          ]);
+     
+         // Now, check if both clock_in and clock_out are recorded
+         $clockInScan = Attendance::where('staff_id', $staff->id)
+             ->where('mode', 'clock_in')
+             ->whereBetween('scanned_at', [$shiftStart, $shiftEnd])
+             ->first();
+     
+         $clockOutScan = Attendance::where('staff_id', $staff->id)
+             ->where('mode', 'clock_out')
+             ->whereBetween('scanned_at', [$shiftStart, $shiftEnd])
+             ->first();
+     
+         if ($clockInScan && $clockOutScan) {
+             // Both clock_in and clock_out exist, update status to 'present'
+             $clockInScan->status = 'present';
+             $clockInScan->save();
+     
+             $clockOutScan->status = 'present';
+             $clockOutScan->save();
+         } elseif ($clockInScan) {
+             // Only clock_in exists, set status to 'pending'
+             $clockInScan->status = 'pending'; // Set to 'pending' instead of 'absent'
+             $clockInScan->save();
+         } elseif ($clockOutScan) {
+             // Only clock_out exists, set status to 'pending'
+             $clockOutScan->status = 'pending'; // You can also set this to 'incomplete'
+             $clockOutScan->save();
+         }
      
          return response()->json(['message' => 'Scan recorded'], 201);
      }
+     
+     
      
      public function getAttendance()
      {

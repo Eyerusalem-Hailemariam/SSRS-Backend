@@ -32,6 +32,8 @@ class ShiftController extends Controller
         // If no conflict, create the new shift
         $shift = Shift::create($request->all());
 
+        
+
         return response()->json($shift, 201);
     }
 
