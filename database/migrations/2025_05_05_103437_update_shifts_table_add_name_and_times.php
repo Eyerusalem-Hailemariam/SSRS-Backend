@@ -9,9 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('shifts', function (Blueprint $table) {
-            $table->string('name')->after('id');
-            $table->time('start_time')->after('name');
-            $table->time('end_time')->after('start_time');
+        
+            
             $table->timestamps(); // adds created_at and updated_at
         });
     }

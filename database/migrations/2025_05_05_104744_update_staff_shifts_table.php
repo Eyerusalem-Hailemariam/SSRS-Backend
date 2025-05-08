@@ -11,11 +11,31 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Modify the existing staff_shifts table
         Schema::table('staff_shifts', function (Blueprint $table) {
+            if (Schema::hasColumn('staff_shifts', 'shift_id')) {
+                
+                $table->dropForeign(['shift_id']);
+                
+                $table->unsignedBigInteger('shift_id')->change();
+            } else {
+                
+                $table->unsignedBigInteger('shift_id');
+            }
+            if (Schema::hasColumn('staff_shifts', 'staff_id')) {
+                
+                $table->dropForeign(['staff_id']);
+               
+                $table->unsignedBigInteger('staff_id')->change();
+            } else {
+               
+                $table->unsignedBigInteger('staff_id');
+            }
             
-            $table->enum('type', ['overtime', 'regular'])->default('regular'); // Type of shift (overtime or regular)
+           
+            $table->enum('type', ['overtime', 'regular'])->default('regular');
             
+            
+            $table->foreign('shift_id')->references('id')->on('shifts');
         });
     }
 
@@ -24,7 +44,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Remove foreign keys and drop the columns if rolling back
-       
+        Schema::table('staff_shifts', function (Blueprint $table) {
+            // Drop the type column
+            $table->dropColumn('type');
+            
+            // If you modified the shift_id column, you may need to revert those changes
+            // This would depend on what the previous state was
+            $table->unsignedBigInteger('shift_id')->change();
+        });
     }
 };
