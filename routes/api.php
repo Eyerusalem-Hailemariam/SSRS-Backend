@@ -93,6 +93,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/staff-shifts/{id}', [StaffShiftController::class, 'destroy']);
         Route::delete('/shifts/{id}', [ShiftController::class, 'destroy']);
     });
+    Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
 
 
@@ -106,10 +107,9 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/scan', [AttendanceController::class, 'scan']);
-        Route::get('/attendance', [AttendanceController::class, 'getAttendance']);
-       
     });
-    Route::get('/attendance/{staffId}', [AttendanceController::class, 'getAttendanceByStaffId']);
+
+    Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
 
 

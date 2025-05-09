@@ -110,7 +110,7 @@ class AttendanceController extends Controller
              }
          }
      
-         // If no valid shift matched, check if they are late or too early
+         
          if (!$matchedShift) {
              foreach ($shifts as $shift) {
                  $shiftStart = Carbon::parse("{$shift->date} {$shift->start_time}");
@@ -156,15 +156,15 @@ class AttendanceController extends Controller
              }
          }
      
-         // Create the attendance scan record
+         
          $attendance = Attendance::create([
              'staff_id' => $staff->id,
              'mode' => $request->mode,
              'scanned_at' => $currentTime,
-             'status' => 'incomplete', // Set status as 'incomplete' initially
+             'status' => 'incomplete', 
          ]);
      
-         // Now, check if both clock_in and clock_out are recorded
+       
          $clockInScan = Attendance::where('staff_id', $staff->id)
              ->where('mode', 'clock_in')
              ->whereBetween('scanned_at', [$shiftStart, $shiftEnd])
@@ -176,39 +176,37 @@ class AttendanceController extends Controller
              ->first();
      
          if ($clockInScan && $clockOutScan) {
-             // Both clock_in and clock_out exist, update status to 'present'
              $clockInScan->status = 'present';
              $clockInScan->save();
      
              $clockOutScan->status = 'present';
              $clockOutScan->save();
          } elseif ($clockInScan) {
-             // Only clock_in exists, set status to 'pending'
-             $clockInScan->status = 'pending'; // Set to 'pending' instead of 'absent'
+            
+             $clockInScan->status = 'pending'; 
              $clockInScan->save();
          } elseif ($clockOutScan) {
-             // Only clock_out exists, set status to 'pending'
-             $clockOutScan->status = 'pending'; // You can also set this to 'incomplete'
+             $clockOutScan->status = 'pending';
              $clockOutScan->save();
          }
      
          return response()->json(['message' => 'Scan recorded'], 201);
      }
      
-     
-     
-     public function getAttendance()
-     {
-        $attendance = Attendance::all();
-        return response()->json($attendance);
-     }
 
-     public function getAttendanceByStaffId($staffId)
-     {
-        $attendance = Attendance::where('staff_id', $staffId)->get();
-        return response()->json($attendance);
-     }
-     
-     
+ public function getStaffAttendance($staff_id)
+ {
+    $staff = Staff::where('id', $staff_id)->first();
+    if (!$staff) {
+        return response()->json(['message' => 'Staff not found'], 404);
+    }
+
+    $attendance = Attendance::where('staff_id', $staff_id)->get();
+    return response()->json(['attendance' => $attendance], 200);
+ }
+
     
+
+     
+
 }

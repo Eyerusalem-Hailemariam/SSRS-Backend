@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Modify the existing staff_shifts table
         Schema::table('staff_shifts', function (Blueprint $table) {
             if (Schema::hasColumn('staff_shifts', 'shift_id')) {
                 
@@ -44,13 +45,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('staff_shifts', function (Blueprint $table) {
-            // Drop the type column
-            $table->dropColumn('type');
-            
-            // If you modified the shift_id column, you may need to revert those changes
-            // This would depend on what the previous state was
-            $table->unsignedBigInteger('shift_id')->change();
-        });
+        // Remove foreign keys and drop the columns if rolling back
+       
     }
 };

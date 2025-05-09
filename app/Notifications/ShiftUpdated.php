@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Shift;
+use App\Models\StaffShift;  // Use StaffShift instead of Shift
 
 class ShiftUpdated extends Notification implements ShouldQueue
 {
@@ -15,7 +15,8 @@ class ShiftUpdated extends Notification implements ShouldQueue
     protected $shift;
     protected $action;
 
-    public function __construct(Shift $shift, $action)
+    // Update the constructor to accept StaffShift instead of Shift
+    public function __construct(StaffShift $shift, $action)
     {
         $this->shift = $shift;
         $this->action = $action;

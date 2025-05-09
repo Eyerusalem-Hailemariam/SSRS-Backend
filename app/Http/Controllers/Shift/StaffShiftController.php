@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StaffShift;
 use App\Models\Shift;
 use App\Models\Staff;
+use App\Notifications\ShiftUpdated;
 
 class StaffShiftController extends Controller
 {
@@ -42,7 +43,9 @@ class StaffShiftController extends Controller
             'end_time' => $endTime,
         ]);
     
-        //notification for the staff
+        //email for the staff
+        $staff = Staff::find($request->staff_id);
+        $staff->notify(new ShiftUpdated($staffShift, 'assigned'));
 
         return response()->json($staffShift, 201);
     }
