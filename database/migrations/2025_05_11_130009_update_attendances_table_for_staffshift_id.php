@@ -12,10 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendance', function (Blueprint $table) {
-            //
-            $table->enum('status', ['present', 'late', 'pending', 'absent', 'early_leave', 'incomplete'])->default('pending')->after('mode');// values: 'present' or 'absent'  
-            $table->integer('late_minutes')->nullable()->after('status');
-        $table->integer('early_minutes')->nullable()->after('late_minutes');          
+            $table->unsignedBigInteger('staff_shift_id')->nullable()->after('staff_id');
+            $table->foreign('staff_shift_id')->references('id')->on('staff_shifts')->onDelete('set null');
         });
     }
 
@@ -25,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('attendance', function (Blueprint $table) {
-            //
+            $table->dropForeign(['staff_shift_id']);
+            $table->dropColumn('staff_shift_id');
         });
     }
 };

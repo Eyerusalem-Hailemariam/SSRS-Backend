@@ -106,12 +106,12 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
-        Route::post('/scan', [AttendanceController::class, 'scan']);
+    
     });
 
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
-
+Route::post('/scan', [AttendanceController::class, 'scan']);
 
 
 //order routes 
