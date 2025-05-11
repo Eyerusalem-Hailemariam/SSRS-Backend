@@ -1,11 +1,4 @@
 <?php
-
-
-
-    
-
-     
-
 namespace App\Http\Controllers\Attendance;
 
 use App\Http\Controllers\Controller;
@@ -155,5 +148,52 @@ class AttendanceController extends Controller
              'data' => $attendance,
          ]);
      }
+
+
+    public function markAbsentIfNotSignedIn()
+{
+    $today = Carbon::today();
+
+    $shifts = StaffShift::whereDate('date', $today)->get();
+
+
+    if ($shifts->isEmpty()) {
+        return response()->json(['message' => 'No shifts found for today.'], 200);
+    }
+    
+    foreach ($shifts as $shift) {
+        $hasClockIn = Attendance::where('staff_id', $shift->staff_id)
+            ->where('staff_shift_id', $shift->id)
+            ->where('mode', 'clock_in')
+            ->exists();
+
+        if (!$hasClockIn) {
+            Attendance::create([
+                'staff_id' => $shift->staff_id,
+                'staff_shift_id' => $shift->id,
+                'mode' => 'absent',
+                'scanned_at' => now()->setTimezone('Africa/Nairobi'),
+                'status' => 'absent',
+                'is_late' => false,
+                'late_minutes' => 0,
+                'is_early' => false,
+                'early_minutes' => 0,
+            ]);
+        }
+    }
+
+    return response()->json(['message' => 'Absent employees have been updated successfully.']);
+}
+
+    public function getStaffAttendance($staff_id)
+    {
+        $staff = Staff::where('id', $staff_id)->first();
+        if (!$staff) {
+            return response()->json(['message' => 'Staff not found'], 404);
+        }
+
+        $attendance = Attendance::where('staff_id', $staff_id)->get();
+        return response()->json(['attendance' => $attendance], 200);
+    }
      
     }     
