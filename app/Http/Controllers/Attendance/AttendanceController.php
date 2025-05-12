@@ -61,7 +61,7 @@ class AttendanceController extends Controller
              'staff_id' => 'required|string',
              'staff_shift_id' => 'required|exists:staff_shifts,id',
              'mode' => 'required|string|in:clock_in,clock_out',
-             'tolerance_minutes' => 'nullable|integer|min:1',
+             'tolerance_minutes' => 'nullable|integer|min:0',
          ]);
      
          if ($validator->fails()) {
@@ -78,7 +78,6 @@ class AttendanceController extends Controller
              return response()->json(['message' => 'Shift not assigned to this staff'], 403);
          }
      
-
          $existingAttendance = Attendance::where('staff_id', $staff->id)
              ->where('staff_shift_id', $shift->id)
              ->where('mode', $request->mode)
@@ -105,7 +104,7 @@ class AttendanceController extends Controller
          }
      
          $currentTime = now()->setTimezone('Africa/Nairobi');
-         $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 15));
+         $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 1));
      
          $isLate = false;
          $isEarly = false;
@@ -139,6 +138,7 @@ class AttendanceController extends Controller
              'late_minutes' => $lateMinutes,
              'is_early' => $isEarly,
              'early_minutes' => $earlyMinutes,
+             'approved_by_admin' => false, 
          ]);
      
          $attendance->save();
@@ -148,42 +148,22 @@ class AttendanceController extends Controller
              'data' => $attendance,
          ]);
      }
-
-
-    public function markAbsentIfNotSignedIn()
-{
-    $today = Carbon::today();
-
-    $shifts = StaffShift::whereDate('date', $today)->get();
-
-
-    if ($shifts->isEmpty()) {
-        return response()->json(['message' => 'No shifts found for today.'], 200);
-    }
-    
-    foreach ($shifts as $shift) {
-        $hasClockIn = Attendance::where('staff_id', $shift->staff_id)
-            ->where('staff_shift_id', $shift->id)
-            ->where('mode', 'clock_in')
-            ->exists();
-
-        if (!$hasClockIn) {
-            Attendance::create([
-                'staff_id' => $shift->staff_id,
-                'staff_shift_id' => $shift->id,
-                'mode' => 'absent',
-                'scanned_at' => now()->setTimezone('Africa/Nairobi'),
-                'status' => 'absent',
-                'is_late' => false,
-                'late_minutes' => 0,
-                'is_early' => false,
-                'early_minutes' => 0,
-            ]);
-        }
-    }
-
-    return response()->json(['message' => 'Absent employees have been updated successfully.']);
-}
+     public function approveAttendance(Request $request, $attendanceId)
+     {
+         $attendance = Attendance::find($attendanceId);
+         if (!$attendance) {
+             return response()->json(['message' => 'Attendance record not found'], 404);
+         }
+     
+         $attendance->approved_by_admin = true;
+         $attendance->save();
+     
+         return response()->json([
+             'message' => 'Attendance approved by admin',
+             'data' => $attendance,
+         ]);
+     }
+          
 
     public function getStaffAttendance($staff_id)
     {
@@ -196,4 +176,4 @@ class AttendanceController extends Controller
         return response()->json(['attendance' => $attendance], 200);
     }
      
-    }     
+}     

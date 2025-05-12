@@ -11,11 +11,12 @@ class ShiftController extends Controller
 {
     public function store(Request $request)
     {
-        // Validate the incoming request data
+     
         $request->validate([
             'name' => 'required|string|max:255',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i',
+            'is_overtime' => 'boolean',
         ]);
 
 
@@ -32,6 +33,7 @@ class ShiftController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'is_overtime' => 'boolean',
         ]);
 
         $shift = Shift::findOrFail($id);
@@ -41,9 +43,15 @@ class ShiftController extends Controller
                 'message' => 'The name is already up to date.',
             ], 200);
         }
+        if($shift->is_overtime && $request->is_overtime === false) {
+            return response()->json([
+                'message' => 'Cannot change overtime status to false.',
+            ], 409);
+        }
     
         $shift->update([
             'name' => $request->name,
+            'is_overtime' => $request->is_overtime,
         ]);
     
         return response()->json([
