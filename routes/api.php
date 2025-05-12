@@ -92,6 +92,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Payment routes
 Route::get('callback/{reference}', [ChapaController::class, 'callback'])->name('callback.api');
 Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePayment']);
+Route::post('/distribute-tip', [ChapaController::class, 'distributeTip']);
 
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -114,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
         Route::delete('/{id}', [OrderController::class, 'destroy']);
+        Route::get('/status', [OrderController::class, 'getOrderStatuses']);
     });
 
     //order routes for authenticated users
@@ -126,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
         Route::delete('/{id}', [OrderController::class, 'destroy']);
+        Route::get('/status', [OrderController::class, 'getOrderStatuses']);
     });
 //MenuItem routes
 

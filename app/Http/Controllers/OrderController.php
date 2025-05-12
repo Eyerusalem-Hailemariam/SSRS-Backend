@@ -347,4 +347,12 @@ public function changeStatus(Request $request, $id)
 
     return response()->json(['message' => 'Order deleted successfully'], 200);
 }
+
+public function getOrderStatuses()
+{
+    // Fetch only the required fields from the orders table
+    $orders = Order::select('id', 'order_status', 'payment_status')->get();
+
+    return response()->json(['orders' => $orders], 200);
+}
 }
