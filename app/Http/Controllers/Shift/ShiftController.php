@@ -18,18 +18,8 @@ class ShiftController extends Controller
             'end_time' => 'required|date_format:H:i',
         ]);
 
-        // Check if there is an existing shift that overlaps with the new shift's time
-        $existingShift = Shift::where('start_time', '<', $request->end_time)
-            ->where('end_time', '>', $request->start_time)
-            ->first();
 
-        if ($existingShift) {
-            return response()->json([
-                'message' => 'The shift times overlap with an existing shift.'
-            ], 409); // Conflict response
-        }
 
-        // If no conflict, create the new shift
         $shift = Shift::create($request->all());
 
         
@@ -39,22 +29,19 @@ class ShiftController extends Controller
 
     public function update(Request $request, $id)
     {
-        // Validate only the name
+
         $request->validate([
             'name' => 'required|string|max:255',
         ]);
-    
-        // Find the shift
+
         $shift = Shift::findOrFail($id);
     
-        // Check if the name is the same
         if ($request->name === $shift->name) {
             return response()->json([
                 'message' => 'The name is already up to date.',
             ], 200);
         }
     
-        // Update the name
         $shift->update([
             'name' => $request->name,
         ]);

@@ -43,9 +43,7 @@ class StaffShiftController extends Controller
             'end_time' => $endTime,
         ]);
     
-        //email for the staff
-        $staff = Staff::find($request->staff_id);
-        $staff->notify(new ShiftUpdated($staffShift, 'assigned'));
+ 
 
         return response()->json($staffShift, 201);
     }
