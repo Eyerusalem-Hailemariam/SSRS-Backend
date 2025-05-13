@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-            $table->string('name')->after('id'); // e.g. Morning, Evening
-            $table->time('start_time')->after('name');
-            $table->time('end_time')->after('start_time');
+        //
+        Schema::table('attendance', function (Blueprint $table) {
+            $table->boolean('approved_by_admin')->default(false);
         });
     }
 
@@ -23,8 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-
+        //
+        Schema::table('attendances', function (Blueprint $table) {
+            $table->dropColumn('approved_by_admin');
         });
     }
 };

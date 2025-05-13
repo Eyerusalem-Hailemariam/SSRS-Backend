@@ -22,6 +22,7 @@ use App\Http\Controllers\Shift\ShiftController;
 use App\Http\Controllers\Shift\OvertimeController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Auth\StaffAuthController;
+use App\Http\Controllers\Shift\StaffShiftController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -82,12 +83,21 @@ Route::get('/api/documentation', function () {
 //Shift routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shifts', [ShiftController::class, 'index']);
+    Route::get('/staff-shifts/{staffId}', [StaffShiftController::class, 'getStaffShift']);
     Route::middleware('role:admin')->group(function () {
-        Route::post('/shifts', [ShiftController::class, 'store']);
-        Route::match(['put', 'patch'], '/shifts/{id}', [ShiftController::class, 'update']);
+        Route::get('/staff-shifts', [StaffShiftController::class, 'index']);
+      
+        Route::put('/shifts/{id}', [ShiftController::class, 'update']);
+        Route::post('/staff-shifts', [StaffShiftController::class, 'store']);
+        Route::put('/staff-shifts/{id}', [StaffShiftController::class, 'update']);
+        Route::delete('/staff-shifts/{id}', [StaffShiftController::class, 'destroy']);
         Route::delete('/shifts/{id}', [ShiftController::class, 'destroy']);
     });
+    Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
+
+
+Route::post('/shifts', [ShiftController::class, 'store']);
 
 // Payment routes
 Route::get('callback/{reference}', [ChapaController::class, 'callback'])->name('callback.api');
@@ -97,15 +107,15 @@ Route::post('/distribute-tip', [ChapaController::class, 'distributeTip']);
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
-    Route::post('/scan', [AttendanceController::class, 'scan']);
+        Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
     });
+      Route::post('/scan', [AttendanceController::class, 'scan']);
+    Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
 
 
 
-
 //order routes 
-
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::get('/user', [OrderController::class, 'getUserOrders']);

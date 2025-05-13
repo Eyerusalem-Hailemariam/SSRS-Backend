@@ -1,6 +1,4 @@
 <?php
-
-
 namespace App\Http\Controllers\Attendance;
 
 use App\Http\Controllers\Controller;
@@ -8,15 +6,15 @@ use OpenApi\Annotations as OA;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\Staff;
-use App\Models\Shift;
-use Illuminate\Support\Facades\Auth;
+use App\Models\StaffShift;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
-use Carbon\Carbon;
-
 
 class AttendanceController extends Controller
 {
     /**
+     * Record staff attendance (clock-in/clock-out).
+     *
      * @OA\Post(
      *     path="/api/scan",
      *     summary="Record staff attendance",
@@ -32,7 +30,6 @@ class AttendanceController extends Controller
      *             @OA\Property(property="mode", type="string", example="checkin")
      *         )
      *     ),
-     *
      *     @OA\Response(
      *         response=201,
      *         description="Scan recorded",
@@ -61,70 +58,131 @@ class AttendanceController extends Controller
         $validator = Validator::make($request->all(), [
             'staff_id' => 'required|string',
             'mode' => 'required|string|in:clock_in,clock_out',
-            'tolerance_minutes' => 'nullable|integer|min:1',
+            'tolerance_minutes' => 'nullable|integer|min:0',
         ]);
-
+    
         if ($validator->fails()) {
-            return response()->json(['message' => 'Invalid input'], 422);
+            return response()->json(['message' => 'Invalid input', 'errors' => $validator->errors()], 422);
+        }
+    
+        $staff = Staff::where('staff_id', $request->staff_id)->first();
+        if (!$staff) {
+            return response()->json(['message' => 'Staff not found'], 404);
+        }
+    
+        $shifts = StaffShift::where('staff_id', $staff->id)
+            ->whereDate('date', Carbon::today())
+            ->get();
+    
+        if ($shifts->isEmpty()) {
+            return response()->json(['message' => 'No shift found for today'], 404);
         }
 
-        $staff = Staff::where('staff_id', $request->staff_id)->first();
+        $currentTime = now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0);
+        $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 1));
+    
+        foreach ($shifts as $shift) {
+            $shiftStart = Carbon::parse($shift->date . ' ' . $shift->start_time)->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0);
+            $shiftEnd = Carbon::parse($shift->date . ' ' . $shift->end_time)->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0);
+    
+            if ($currentTime->gte($shiftStart) && $currentTime->lte($shiftEnd)) {
+    
+                $existingAttendance = Attendance::where('staff_id', $staff->id)
+                    ->where('mode', $request->mode)
+                    ->whereBetween('scanned_at', [$shiftStart, $shiftEnd])
+                    ->first();
+    
+                if ($existingAttendance) {
+                    return response()->json([
+                        'message' => 'Attendance already recorded for this shift',
+                        'existing' => $existingAttendance
+                    ], 409);
+                }
+    
+                if ($request->mode === 'clock_out') {
+                    $existingClockIn = Attendance::where('staff_id', $staff->id)
+                        ->where('mode', 'clock_in')
+                        ->whereBetween('scanned_at', [$shiftStart, $shiftEnd])
+                        ->first();
+    
+                    if (!$existingClockIn) {
+                        return response()->json([
+                            'message' => 'You must clock in before clocking out for this shift'
+                        ], 403);
+                    }
+                }
+    
+                if ($request->mode === 'clock_in') {
+                    $graceEnd = $shiftStart->copy()->addMinutes($toleranceMinutes);
+                    $isLate = $currentTime->greaterThan($graceEnd);
+                    $lateMinutes = $isLate ? $currentTime->diffInMinutes($graceEnd) : 0;
+    
+                    $attendance = Attendance::create([
+                        'staff_id' => $staff->id,
+                        'staff_shift_id' => $shift->id,
+                        'mode' => 'clock_in',
+                        'scanned_at' => $currentTime,
+                        'status' => 'present',
+                        'is_late' => $isLate,
+                        'late_minutes' => $lateMinutes,
+                        'approved_by_admin' => false,
+                    ]);
+                } else {
+                    $graceStart = $shiftEnd->copy()->subMinutes($toleranceMinutes);
+                    $isEarly = $currentTime->lessThan($graceStart);
+                    $earlyMinutes = $isEarly ? $graceStart->diffInMinutes($currentTime) : 0;
+    
+                    $attendance = Attendance::create([
+                        'staff_id' => $staff->id,
+                        'staff_shift_id' => $shift->id,
+                        'mode' => 'clock_out',
+                        'scanned_at' => $currentTime,
+                        'status' => 'present',
+                        'is_early' => $isEarly,
+                        'early_minutes' => $earlyMinutes,
+                        'late_minutes' => 0,
+                        'approved_by_admin' => false,
+                    ]);
+                }
+    
+                return response()->json([
+                    'message' => 'Attendance recorded successfully',
+                    'data' => $attendance,
+                ]);
+            }
+        }
+    
+        return response()->json(['message' => 'Current time is not within any shift'], 400);
+    }
+    
+    
+     
+     public function approveAttendance(Request $request, $attendanceId)
+     {
+         $attendance = Attendance::find($attendanceId);
+         if (!$attendance) {
+             return response()->json(['message' => 'Attendance record not found'], 404);
+         }
+     
+         $attendance->approved_by_admin = true;
+         $attendance->save();
+     
+         return response()->json([
+             'message' => 'Attendance approved by admin',
+             'data' => $attendance,
+         ]);
+     }
+          
 
-
+    public function getStaffAttendance($staff_id)
+    {
+        $staff = Staff::where('id', $staff_id)->first();
         if (!$staff) {
             return response()->json(['message' => 'Staff not found'], 404);
         }
 
-        $currentTime = now();
-        $todayDate = $currentTime->toDateString();
-
-
-        $shift = Shift::where('staff_id', $staff->id)
-            ->whereDate('start_date', '<=', $todayDate)
-            ->whereDate('end_date', '>=', $todayDate)
-            ->first();
-
-        if (!$shift) {
-            return response()->json(['message' => 'No shift assigned for today'], 404);
-        }
-
-        $shiftStart = Carbon::parse($shift->start_date . ' ' . $shift->start_time);
-        $shiftEnd = Carbon::parse($shift->end_date . ' ' . $shift->end_time);
-
-
-        $toleranceMinutes = $request->input('tolerance_minutes', config('attendance.tolerance_minutes', 15)); 
-
-        $isStartTime = $currentTime->between(
-            $shiftStart->copy()->subMinutes($toleranceMinutes),
-            $shiftStart->copy()->addMinutes($toleranceMinutes)
-        );
-
-        $isEndTime = $currentTime->between(
-            $shiftEnd->copy()->subMinutes($toleranceMinutes),
-            $shiftEnd->copy()->addMinutes($toleranceMinutes)
-        );
-
-        if (($request->mode === 'checkin' && !$isStartTime) ||
-            ($request->mode === 'checkout' && !$isEndTime)) {
-            return response()->json(['message' => 'Scan not within shift time'], 409);
-        }
-
-        $existingScan = Attendance::where('staff_id', $staff->id)
-            ->where('mode', $request->mode)
-            ->whereDate('created_at', $todayDate)
-            ->first();
-
-        if ($existingScan) {
-            return response()->json(['message' => 'Duplicate scan'], 409);
-        }
-
-
-        Attendance::create([
-            'staff_id' => $staff->id,
-            'mode' => $request->mode,
-            'scanned_at' => $currentTime,
-        ]);
-
-        return response()->json(['message' => 'Scan recorded'], 201);
+        $attendance = Attendance::where('staff_id', $staff_id)->get();
+        return response()->json(['attendance' => $attendance], 200);
     }
-}
+     
+}     

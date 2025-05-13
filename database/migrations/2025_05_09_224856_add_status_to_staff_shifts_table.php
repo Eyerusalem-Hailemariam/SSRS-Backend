@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-            $table->string('name')->after('id'); // e.g. Morning, Evening
-            $table->time('start_time')->after('name');
-            $table->time('end_time')->after('start_time');
-        });
+            Schema::table('staff_shifts', function (Blueprint $table) {
+                $table->string('status')->nullable()->after('end_time'); // status can be: present, absent, late
+            });
     }
 
     /**
@@ -23,8 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('shifts', function (Blueprint $table) {
-
+        Schema::table('staff_shifts', function (Blueprint $table) {
+            $table->dropColumn('status');
         });
+    
     }
 };
