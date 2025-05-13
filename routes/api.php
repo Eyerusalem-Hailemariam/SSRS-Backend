@@ -107,12 +107,11 @@ Route::post('/payment/chapa/initialize', [ChapaController::class, 'initializePay
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
-        Route::post('/scan', [AttendanceController::class, 'scan']);
     });
-   
+      Route::post('/scan', [AttendanceController::class, 'scan']);
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
-
+Route::post('/scan', [AttendanceController::class, 'scan']);
 
 Route::post('/attendance/mark-absent', [AttendanceController::class, 'markAbsentIfNotSignedIn']);
 
