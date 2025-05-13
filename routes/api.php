@@ -111,9 +111,7 @@ Route::middleware('auth:sanctum')->group(function () {
       Route::post('/scan', [AttendanceController::class, 'scan']);
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
-Route::post('/scan', [AttendanceController::class, 'scan']);
 
-Route::post('/attendance/mark-absent', [AttendanceController::class, 'markAbsentIfNotSignedIn']);
 
 
 //order routes 
