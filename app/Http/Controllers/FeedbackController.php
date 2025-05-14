@@ -30,6 +30,7 @@ public function storeForLoggedInUser(Request $request)
     $response = [
         'message' => 'Feedback submitted successfully.',
         'feedback' => [
+            'feedback_id' => $feedback->id, 
             'customer_name' => $user->name,
             'feedback_message' => $feedback->message,
             'created_at' => $feedback->created_at,
@@ -62,6 +63,7 @@ public function storeForGuestUser(Request $request)
     $response = [
         'message' => 'Feedback submitted successfully.',
         'feedback' => [
+            'feedback_id' => $feedback->id, 
             'customer_name' => $tempId,
             'feedback_message' => $feedback->message,
             'created_at' => $feedback->created_at,
