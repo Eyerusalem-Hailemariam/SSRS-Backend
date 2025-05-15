@@ -130,16 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //order routes for authenticated users
     Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
-        Route::get('/', [OrderController::class, 'index']);
-        Route::get('/user', [OrderController::class, 'getUserOrders']);
-        Route::get('/{id}', [OrderController::class, 'show']);
-        Route::post('/logged-in', [OrderController::class, 'storeForLoggedInUser']); // uses auth()->id()
-        Route::patch('/{id}/notify-arrival', [OrderController::class, 'notifyArrival']);
-        Route::put('/{id}', [OrderController::class, 'update']);
-        Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
-        Route::delete('/{id}', [OrderController::class, 'destroy']);
-        Route::get('/status', [OrderController::class, 'getOrderStatuses']);
+        Route::post('/logged-in', [OrderController::class, 'storeForLoggedInUser']);
     });
+
+    
 //MenuItem routes
 
 Route::prefix('menuitems')->group(function () {
@@ -236,6 +230,4 @@ Route::prefix('feedbacks')->group(function () {
 
 Route::middleware('auth:sanctum')->prefix('feedbacks')->group(function () {
     Route::post('/logged-in', [FeedbackController::class, 'storeForLoggedInUser']); // Create a new feedback
-    Route::get('/', [FeedbackController::class, 'index']); // Get all feedbacks
-    Route::get('/{id}', [FeedbackController::class, 'show']); // Get a specific feedback
 });
