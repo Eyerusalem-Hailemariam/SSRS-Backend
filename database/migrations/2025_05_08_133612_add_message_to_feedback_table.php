@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('feedback', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('customer_id')->nullable(); // For registered customers
-            $table->string('temp_id')->nullable(); // For unregistered customers
-           
-
-            $table->timestamps();
+        Schema::table('feedback', function (Blueprint $table) {
+            $table->text('message')->nullable()->after('temp_id'); // Add the message column
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('feedback');
+        Schema::table('feedback', function (Blueprint $table) {
+            //
+        });
     }
 };

@@ -16,6 +16,7 @@ class OrderItem extends Model
         'total_price',
         'excluded_ingredients',
     ];
+
     protected $casts = [
         'excluded_ingredients' => 'array', // Cast excluded_ingredients to an array
     ];
@@ -27,5 +28,5 @@ class OrderItem extends Model
     public function menuItem()
     {
         return $this->belongsTo(MenuItem::class);
-    }
+    } 
 }
