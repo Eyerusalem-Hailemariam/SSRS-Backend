@@ -130,8 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     //order routes for authenticated users
     Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
-        Route::post('/logged-in', [OrderController::class, 'storeForLoggedInUser']); // uses auth()->id()
+        Route::post('/logged-in', [OrderController::class, 'storeForLoggedInUser']);
     });
+
+    
 //MenuItem routes
 
 Route::prefix('menuitems')->group(function () {
