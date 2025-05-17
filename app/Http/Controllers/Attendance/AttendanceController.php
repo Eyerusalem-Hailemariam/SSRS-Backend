@@ -172,7 +172,38 @@ class AttendanceController extends Controller
              'data' => $attendance,
          ]);
      }
-          
+    
+     public function approvelate(Request $request, $attendanceId)
+     {
+         $attendance = Attendance::find($attendanceId);
+         if (!$attendance) {
+             return response()->json(['message' => 'Attendance record not found'], 404);
+         }
+     
+         $attendance->late_approved = true;
+         $attendance->save();
+     
+         return response()->json([
+             'message' => 'Late minutes approved by admin',
+             'data' => $attendance,
+         ]);
+     }
+
+     public function approveearly(Request $request, $attendanceId)
+     {
+         $attendance = Attendance::find($attendanceId);
+         if (!$attendance) {
+             return response()->json(['message' => 'Attendance record not found'], 404);
+         }
+     
+         $attendance->early_approved = true;
+         $attendance->save();
+     
+         return response()->json([
+             'message' => 'Early minutes approved by admin',
+             'data' => $attendance,
+         ]);
+     }
 
     public function getStaffAttendance($staff_id)
     {

@@ -73,6 +73,7 @@ class AdminController extends Controller
             'role' => 'required|string',
             'total_salary' => 'required|numeric|min:0',
             'overtime_rate' => 'required|numeric|min:0',
+            'tips' => 'nullable|numeric|min:0',
         ]);
 
         $tempPassword = Str::random(10);
@@ -84,7 +85,8 @@ class AdminController extends Controller
             'role' => $request->role, 
             'total_salary' => $request->total_salary,
             'overtime_rate' => $request->overtime_rate,
-            'tips' => 0,
+            'tips' => $request->tips ?? 0,
+
         ]);
 
         Mail::to($staff->email)->send(new StaffAccountCreated($staff, $tempPassword));

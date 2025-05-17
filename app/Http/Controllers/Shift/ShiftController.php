@@ -9,24 +9,35 @@ use Carbon\Carbon;
 
 class ShiftController extends Controller
 {
-    public function store(Request $request)
-    {
-     
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i',
-            'is_overtime' => 'boolean',
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'start_time' => 'required|date_format:H:i',
+        'end_time' => 'required|date_format:H:i',
+        'is_overtime' => 'nullable|boolean',
+        'overtime_type' => 'nullable|in:normal,weekly,holiday,weekend',
+    ]);
 
+    $isOvertime = $request->boolean('is_overtime');
 
-
-        $shift = Shift::create($request->all());
-
-        
-
-        return response()->json($shift, 201);
+    // Ensure overtime_type only if is_overtime is true
+    if ($isOvertime && !$request->filled('overtime_type')) {
+        return response()->json(['error' => 'Overtime type is required when is_overtime is true.'], 422);
     }
+
+    $shift = Shift::create([
+        'name' => $request->name,
+        'start_time' => $request->start_time,
+        'end_time' => $request->end_time,
+        'is_overtime' => $isOvertime,
+        'overtime_type' => $isOvertime ? $request->overtime_type : null,
+    ]);
+
+    return response()->json($shift, 201);
+}
+
+
 
     public function update(Request $request, $id)
     {
