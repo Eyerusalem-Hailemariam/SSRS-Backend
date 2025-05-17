@@ -17,7 +17,7 @@ class OrderController extends Controller
     public function index()
 {
     // Retrieve all orders with their associated order items and menu items
-    $orders = Order::with('orderItems.menuItem', 'table')->get();
+    $orders = Order::with('orderItems.menuItem', 'table','payment')->get();
 
     return response()->json(['orders' => $orders], 200);
 }
@@ -25,7 +25,7 @@ class OrderController extends Controller
     public function show($id)
 {
     // Find the order by ID and include related order items and menu items
-    $order = Order::with('orderItems.menuItem', 'table')->find($id);
+    $order = Order::with('orderItems.menuItem', 'table','payment')->find($id);
 
     // If the order is not found, return a 404 response
     if (!$order) {
@@ -36,78 +36,127 @@ class OrderController extends Controller
     return response()->json(['order' => $order], 200);
 }
 
-    // Store a new order
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'table_number' => $request->order_type === 'dine-in' ? 'required|integer|exists:tables,table_number' : 'nullable|integer|exists:tables,table_number',
-            'order_items' => 'required|array',
-            'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
-            'order_items.*.quantity' => 'required|integer|min:1',
-            'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
-            'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
-            'customer_ip' => 'required|ip',
-            'customer_temp_id' => 'required|string|max:255',
-            'order_type' => 'required|in:dine-in,remote', // Specify order type
-        ]);
+    // Store a new order for logged in users
+public function storeForLoggedInUser(Request $request)
+{
+    $validatedData = $request->validate([
+        'table_number' => $request->order_type === 'dine-in' ? 'required|integer|exists:tables,table_number' : 'nullable|integer|exists:tables,table_number',
+        'order_items' => 'required|array',
+        'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
+        'order_items.*.quantity' => 'required|integer|min:1',
+        'order_items.*.excluded_ingredients' => 'nullable|array',
+        'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id',
+        'order_type' => 'required|in:dine-in,remote',
+    ]);
 
-        $table = null;
+    $table = null;
 
-        // If a table number is provided, validate that it is not occupied
-        if (!empty($validatedData['table_number'])) {
-            $table = Table::where('table_number', $validatedData['table_number'])->first();
-    
-            if ($table->table_status === 'occupied') {
-                return response()->json(['error' => 'The selected table is already occupied'], 400);
-            }
+    if (!empty($validatedData['table_number'])) {
+        $table = Table::where('table_number', $validatedData['table_number'])->first();
+
+        if ($table->table_status === 'occupied') {
+            return response()->json(['error' => 'The selected table is already occupied'], 400);
         }
-
-
-        $customerId = auth()->check() ? auth()->id() : null;
-
-        $order = Order::create([
-            'customer_id' => $customerId, 
-            'table_id' => $table ? $table->id : null,
-            'order_date_time' => now(),
-            'order_status' => 'pending',
-            'total_price' => 0,
-            'customer_ip' => $validatedData['customer_ip'],
-            'customer_temp_id' => $validatedData['customer_temp_id'],
-            'order_type' => $validatedData['order_type'],
-            'payment_status' => 'pending', // Payment is handled separately
-        ]);
-
-        $totalAmount = 0;
-        foreach ($validatedData['order_items'] as $item) {
-            $menuItem = MenuItem::findOrFail($item['menu_item_id']);
-            $orderItem = new OrderItem([
-                'menu_item_id' => $item['menu_item_id'],
-                'quantity' => $item['quantity'],
-                'total_price' => $menuItem->price* $item['quantity'],
-                'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : null, // Store excluded ingredients as JSON
-            ]);
-            $order->orderItems()->save($orderItem);
-            $totalAmount += $menuItem->price * $item['quantity'];
-        }
-
-
-        $order->update(['total_price' => $totalAmount]);
-
-        if ($table) {
-        $table->update(['table_status' => 'occupied']);
-        }
-
-
-// Add tx_ref to the response to be used in payment initialization
-        return response()->json([
-            'message' => 'Order placed successfully. Proceed to payment.',
-            'order' => $order->load('orderItems.menuItem'),
-            'order_id' => $order->id
-        ], 201);
-
-
-
     }
+
+    $customerId = auth()->id();
+
+    $order = Order::create([
+        'customer_id' => $customerId,
+        'table_id' => $table ? $table->id : null,
+        'order_date_time' => now(),
+        'order_status' => 'pending',
+        'total_price' => 0,
+        'order_type' => $validatedData['order_type'],
+        'payment_status' => 'pending',
+    ]);
+
+    $totalAmount = 0;
+    foreach ($validatedData['order_items'] as $item) {
+        $menuItem = MenuItem::findOrFail($item['menu_item_id']);
+        $orderItem = new OrderItem([
+            'menu_item_id' => $item['menu_item_id'],
+            'quantity' => $item['quantity'],
+            'total_price' => $menuItem->price * $item['quantity'],
+            'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : null,
+        ]);
+        $order->orderItems()->save($orderItem);
+        $totalAmount += $menuItem->price * $item['quantity'];
+    }
+
+    $order->update(['total_price' => $totalAmount]);
+
+    if ($table) {
+        $table->update(['table_status' => 'occupied']);
+    }
+
+    return response()->json([
+        'message' => 'Order placed successfully for logged-in user.',
+        'order' => $order->load('orderItems.menuItem'),
+    ], 201);
+}
+
+        // Store a new order for guest users
+public function storeForGuestUser(Request $request)
+{
+    $validatedData = $request->validate([
+        'table_number' => $request->order_type === 'dine-in' ? 'required|integer|exists:tables,table_number' : 'nullable|integer|exists:tables,table_number',
+        'order_items' => 'required|array',
+        'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
+        'order_items.*.quantity' => 'required|integer|min:1',
+        'order_items.*.excluded_ingredients' => 'nullable|array',
+        'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id',
+        'customer_ip' => 'required|ip',
+        'customer_temp_id' => 'required|string|max:255',
+        'order_type' => 'required|in:dine-in,remote',
+    ]);
+
+    $table = null;
+
+    if (!empty($validatedData['table_number'])) {
+        $table = Table::where('table_number', $validatedData['table_number'])->first();
+
+        if ($table->table_status === 'occupied') {
+            return response()->json(['error' => 'The selected table is already occupied'], 400);
+        }
+    }
+
+    $order = Order::create([
+        'customer_id' => null,
+        'table_id' => $table ? $table->id : null,
+        'order_date_time' => now(),
+        'order_status' => 'pending',
+        'total_price' => 0,
+        'customer_ip' => $validatedData['customer_ip'],
+        'customer_temp_id' => $validatedData['customer_temp_id'],
+        'order_type' => $validatedData['order_type'],
+        'payment_status' => 'pending',
+    ]);
+
+    $totalAmount = 0;
+    foreach ($validatedData['order_items'] as $item) {
+        $menuItem = MenuItem::findOrFail($item['menu_item_id']);
+        $orderItem = new OrderItem([
+            'menu_item_id' => $item['menu_item_id'],
+            'quantity' => $item['quantity'],
+            'total_price' => $menuItem->price * $item['quantity'],
+            'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : null,
+        ]);
+        $order->orderItems()->save($orderItem);
+        $totalAmount += $menuItem->price * $item['quantity'];
+    }
+
+    $order->update(['total_price' => $totalAmount]);
+
+    if ($table) {
+        $table->update(['table_status' => 'occupied']);
+    }
+
+    return response()->json([
+        'message' => 'Order placed successfully for guest user.',
+        'order' => $order->load('orderItems.menuItem'),
+    ], 201);
+}
 
     // Notify arrival for remote orders
 public function notifyArrival(Request $request, $id)
@@ -171,6 +220,9 @@ public function notifyArrival(Request $request, $id)
             'order_items' => 'required|array',
             'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
             'order_items.*.quantity' => 'required|integer|min:1',
+            'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
+            'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
+    
         ]);
 
         $order->orderItems()->delete();
@@ -182,6 +234,8 @@ public function notifyArrival(Request $request, $id)
                 'menu_item_id' => $item['menu_item_id'],
                 'quantity' => $item['quantity'],
                 'total_price' => $menuItem->price* $item['quantity'],
+                'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : json_encode([]), // Save excluded ingredients as JSON
+
             ]);
             $order->orderItems()->save($orderItem);
             $totalAmount += $menuItem->price * $item['quantity'];
@@ -292,5 +346,13 @@ public function changeStatus(Request $request, $id)
     $order->delete(); // Delete the order itself
 
     return response()->json(['message' => 'Order deleted successfully'], 200);
+}
+
+public function getOrderStatuses()
+{
+    // Fetch only the required fields from the orders table
+    $orders = Order::select('id', 'order_status', 'payment_status')->get();
+
+    return response()->json(['orders' => $orders], 200);
 }
 }

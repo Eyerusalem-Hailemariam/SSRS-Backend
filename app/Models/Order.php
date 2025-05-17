@@ -24,7 +24,6 @@ class Order extends Model
         'notified_arrival',
         'is_remote',
         'payment_status',
-        'tx_ref' 
     ];
 
     public function customer()

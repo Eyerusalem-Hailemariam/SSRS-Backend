@@ -180,8 +180,8 @@ class ChapaController extends Controller
             Log::info('Received callback for reference: ' . $reference);
 
             $data = Http::withToken(env('CHAPA_SECRET_KEY'))
-    ->get("https://api.chapa.co/v1/transaction/verify/{$reference}")
-    ->json();
+                ->get("https://api.chapa.co/v1/transaction/verify/{$reference}")
+                ->json();
 
 
  
@@ -203,6 +203,7 @@ class ChapaController extends Controller
                     // Calculate tip if the amount paid exceeds the order total price
                     $payment = Payment::where('tx_ref', $reference)->first();
                     $tip = $payment->amount - $order->total_price;
+                    $payment->update(['tips' => $tip > 0 ? $tip : 0]);
     
                     if ($tip > 0) {
                         // Distribute the tip to chefs who are clocked in
@@ -255,6 +256,17 @@ private function distributeTipToChefs($tip)
         $chef->increment('tips', $tipPerChef);
         Log::info("Distributed {$tipPerChef} tip to Chef ID: {$chef->id}");
     }
+    return response()->json(['message' => 'Tip distributed successfully to chefs.'], 200);
+}
+public function distributeTip(Request $request)
+{
+    $validatedData = $request->validate([
+        'tip' => 'required|numeric|min:0.01', // Validate the tip amount
+    ]);
+
+    $tip = $validatedData['tip'];
+
+    return $this->distributeTipToChefs($tip);
 }
 }
 

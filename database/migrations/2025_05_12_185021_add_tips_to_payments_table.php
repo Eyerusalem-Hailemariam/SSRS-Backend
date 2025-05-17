@@ -11,13 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('feedback', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('customer_id')->nullable(); // For registered customers
-            $table->string('temp_id')->nullable(); // For unregistered customers
-           
-
-            $table->timestamps();
+        Schema::table('payments', function (Blueprint $table) {
+            $table->decimal('tips', 10, 2)->nullable()->after('amount'); // Add tips column
         });
     }
 
@@ -26,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('feedback');
+        Schema::table('payments', function (Blueprint $table) {
+            //
+        });
     }
 };
