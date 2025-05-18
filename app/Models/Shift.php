@@ -28,7 +28,8 @@ class Shift extends Model
         'name',
         'start_time',
         'end_time',
-        
+        'is_overtime',
+        'overtime_type',
     ];
     public function staff() {
         return $this->belongsTo(Staff::class, 'staff_id');

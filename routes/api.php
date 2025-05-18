@@ -23,6 +23,8 @@ use App\Http\Controllers\Shift\OvertimeController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Auth\StaffAuthController;
 use App\Http\Controllers\Shift\StaffShiftController;
+use App\Http\Controllers\PayrollController;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -88,14 +90,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/staff-shifts', [StaffShiftController::class, 'index']);
       
         Route::put('/shifts/{id}', [ShiftController::class, 'update']);
-        Route::post('/staff-shifts', [StaffShiftController::class, 'store']);
-        Route::put('/staff-shifts/{id}', [StaffShiftController::class, 'update']);
+       
+        
         Route::delete('/staff-shifts/{id}', [StaffShiftController::class, 'destroy']);
         Route::delete('/shifts/{id}', [ShiftController::class, 'destroy']);
     });
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
-
+ Route::post('/staff-shifts', [StaffShiftController::class, 'store']);
+Route::put('/staff-shifts/{id}', [StaffShiftController::class, 'update']);
 
 Route::post('/shifts', [ShiftController::class, 'store']);
 
@@ -107,12 +110,18 @@ Route::post('/distribute-tip', [ChapaController::class, 'distributeTip']);
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
-        Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
+      
     });
-      Route::post('/scan', [AttendanceController::class, 'scan']);
+     
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
 
+//Payroll routes
+ Route::post('/scan', [AttendanceController::class, 'scan']);
+Route::put('/attendance/{id}/approve-late', [AttendanceController::class, 'approvelate']);
+Route::put('/attendance/{id}/approve-early', [AttendanceController::class, 'approveearly']);
+Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
+Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
 
 
 //order routes 
