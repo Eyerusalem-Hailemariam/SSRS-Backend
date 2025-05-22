@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
-        Schema::table('shifts', function (Blueprint $table) {
-           $table->boolean('is_overtime')->default(false)->after('end_time');
+        Schema::table('staff', function (Blueprint $table) {
+            //
+                $table->dropColumn('overtime_rate'); 
         });
     }
 
@@ -22,9 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
-        Schema::table('shifts', function (Blueprint $table) {
-            $table->dropColumn('is_overtime');
+        Schema::table('staff', function (Blueprint $table) {
+            //
+            
         });
     }
 };

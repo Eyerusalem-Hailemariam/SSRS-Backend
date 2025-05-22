@@ -72,7 +72,6 @@ class AdminController extends Controller
             'email' => 'required|email|unique:staff',
             'role' => 'required|string',
             'total_salary' => 'required|numeric|min:0',
-            'overtime_rate' => 'required|numeric|min:0',
             'tips' => 'nullable|numeric|min:0',
         ]);
 
