@@ -31,7 +31,7 @@ class Staff extends Authenticatable implements CanResetPassword
     use Notifiable, HasFactory, HasApiTokens, CanResetPasswordTrait;
 
     protected $fillable = [
-        'name', 'staff_id', 'email', 'password', 'role', 'total_salary', 'overtime_rate', 'tips'
+        'name', 'staff_id', 'email', 'password', 'role', 'total_salary',  'tips'
     ];
 
     public function shifts()

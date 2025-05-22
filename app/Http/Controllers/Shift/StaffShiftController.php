@@ -29,7 +29,6 @@ class StaffShiftController extends Controller
     $endTime = $request->end_time ?? $shift->end_time;
     $overtime = $request->has('is_overtime') ? ($request->boolean('is_overtime') ? 1 : 0) : $shift->is_overtime;
     
-    // Use provided overtime_type, else take from shift if it is overtime shift
     $overtimeType = $request->overtime_type ?? ($shift->is_overtime ? $shift->overtime_type : null);
 
     if ($overtime && !$overtimeType) {

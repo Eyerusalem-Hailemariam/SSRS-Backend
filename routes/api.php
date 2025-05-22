@@ -110,18 +110,22 @@ Route::post('/distribute-tip', [ChapaController::class, 'distributeTip']);
 //Attendance routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
-      
+    Route::post('/scan', [AttendanceController::class, 'scan']);
+    Route::put('/attendance/{id}/approve-late', [AttendanceController::class, 'approvelate']);
+    Route::put('/attendance/{id}/approve-early', [AttendanceController::class, 'approveearly']);
+    Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
+    Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
     });
      
     Route::get('/attendance/{staffId}', [AttendanceController::class, 'getStaffAttendance']);
 });
 
 //Payroll routes
- Route::post('/scan', [AttendanceController::class, 'scan']);
-Route::put('/attendance/{id}/approve-late', [AttendanceController::class, 'approvelate']);
-Route::put('/attendance/{id}/approve-early', [AttendanceController::class, 'approveearly']);
-Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
-Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
+Route::middleware('auth:sanctum')->group(function (){
+    Route::middleware('role:admin')->group(function () {
+    Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
+    });
+});
 
 
 //order routes 

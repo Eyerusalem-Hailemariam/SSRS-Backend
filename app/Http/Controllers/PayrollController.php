@@ -192,7 +192,7 @@ class PayrollController extends Controller
         'net_salary_without_tips' => round($net_salary, 2),
         'net_salary_with_tips' => round($net_salary_with_tips, 2),
     ]);
-
+         $staff->update(['tips' => 0]);
 
             $payrolls[] = [
         'staff' => $staff->name,
@@ -211,6 +211,8 @@ class PayrollController extends Controller
         'net_salary_without_tips' => round($net_salary, 2),
         'net_salary_with_tips' => round($net_salary_with_tips, 2),
     ];
+
+   
 
     }
 
