@@ -16,12 +16,11 @@ public function store(Request $request)
         'start_time' => 'required|date_format:H:i',
         'end_time' => 'required|date_format:H:i',
         'is_overtime' => 'nullable|boolean',
-        'overtime_type' => 'nullable|in:normal,weekly,holiday,weekend',
+        'overtime_type' => 'nullable|in:normal,holiday,weekend,night',
     ]);
 
     $isOvertime = $request->boolean('is_overtime');
 
-    // Ensure overtime_type only if is_overtime is true
     if ($isOvertime && !$request->filled('overtime_type')) {
         return response()->json(['error' => 'Overtime type is required when is_overtime is true.'], 422);
     }

@@ -20,7 +20,7 @@ class StaffShiftController extends Controller
         'start_time' => 'nullable|date_format:H:i',
         'end_time' => 'nullable|date_format:H:i|after:start_time',
         'is_overtime' => 'nullable|boolean',
-        'overtime_type' => 'nullable|in:normal,weekly,holiday,weekend',
+        'overtime_type' => 'nullable|in:normal,holiday,weekend,night',
     ]);
 
     $shift = Shift::findOrFail($request->shift_id);

@@ -9,8 +9,18 @@ class Payroll extends Model
 {
     use HasFactory;
     protected $table = 'payroll';
-    protected $fillable = ['staff_id', 'total_days_worked', 'overtime_days',
-    'base_pay', 'overtime_pay', 'tip_share', 'total_compensation', 'payroll_date' ];
+   protected $fillable = [
+    'staff_id',
+    'start_date',
+    'end_date',
+    'total_salary',
+    'assigned_days',
+    'total_earned',
+    'tax',
+    'tips',
+    'net_salary_without_tips',
+    'net_salary_with_tips',
+];
 
 
     public function staff(){

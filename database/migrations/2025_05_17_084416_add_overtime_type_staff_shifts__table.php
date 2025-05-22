@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('staff_shifts', function (Blueprint $table) {
             //
-            $table->enum('overtime_type', ['normal', 'weekly', 'holiday', 'weekend'])->nullable()->after('is_overtime');
+            $table->enum('overtime_type', ['normal', 'holiday', 'weekend','night'])->nullable()->after('is_overtime');
         });
     }
 
