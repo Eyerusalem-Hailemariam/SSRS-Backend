@@ -13,7 +13,7 @@ return new class extends Migration
     {
         //
         Schema::table('shifts', function (Blueprint $table) {
-            $table->boolean('is_overtime')->default(false)->after('end_time');
+           // $table->boolean('is_overtime')->default(false)->after('end_time');
         });
     }
 
