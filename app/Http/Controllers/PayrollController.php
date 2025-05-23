@@ -159,10 +159,21 @@ class PayrollController extends Controller
             });
 
             $deduct_minutes = $late_minutes + $early_minutes;
-
             $shift_start = Carbon::parse($shift->start_time);
             $shift_end = Carbon::parse($shift->end_time);
+
+            if ($shift->is_night_shift && $shift_end->lessThan($shift_start)) {
+                $shift_end->addDay(); 
+        
+            }
+
+            if ($shift_start->greaterThan($shift_end)) {
+                continue; 
+            }
+
+
             $shift_duration_minutes = $shift_end->diffInMinutes($shift_start);
+
 
             $effective_minutes = max(0, $shift_duration_minutes - $deduct_minutes);
 

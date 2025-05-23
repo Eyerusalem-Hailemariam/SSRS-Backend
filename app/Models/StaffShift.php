@@ -10,7 +10,7 @@ class StaffShift extends Model
     use HasFactory;
 
     protected $fillable = [
-        'staff_id', 'shift_id', 'date', 'start_time', 'end_time', 'is_overtime', "overtime_type"
+        'staff_id', 'shift_id', 'date', 'start_time', 'end_time', 'is_overtime', "overtime_type", "is_night_shift"
     ];
     
     public function shift()
