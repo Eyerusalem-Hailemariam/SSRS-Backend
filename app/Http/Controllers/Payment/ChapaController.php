@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Staff;
+use App\Events\PaymentCompleted;
 
 
 class ChapaController extends Controller
@@ -71,7 +72,8 @@ class ChapaController extends Controller
             'order_id' => 'required|exists:orders,id',
         ]);
 
- 
+ Log::info('Chapa Initialize Request Payload:', $request->all());
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -174,101 +176,58 @@ class ChapaController extends Controller
      * )
      */
 
-    public function callback($reference)
-    {
-        try {
-            Log::info('Received callback for reference: ' . $reference);
-
-            $data = Http::withToken(env('CHAPA_SECRET_KEY'))
-                ->get("https://api.chapa.co/v1/transaction/verify/{$reference}")
-                ->json();
-
-
  
-            Log::info('Chapa Callback Response:', $data);
 
- 
-            if (isset($data['status']) && $data['status'] == 'success') {
-                Payment::where('tx_ref', $reference)->update(['status' => 'completed']);
-
-                // Update the order status to 'paid'
-                $order = Order::whereHas('payment', function ($query) use ($reference) {
-                
-                    $query->where('tx_ref', $reference);
-                })->first();
-    
-                if ($order) {
-                    $order->update(['payment_status' => 'paid']);
-    
-                    // Calculate tip if the amount paid exceeds the order total price
-                    $payment = Payment::where('tx_ref', $reference)->first();
-                    $tip = $payment->amount - $order->total_price;
-                    $payment->update(['tips' => $tip > 0 ? $tip : 0]);
-    
-                    if ($tip > 0) {
-                        // Distribute the tip to chefs who are clocked in
-                        $this->distributeTipToChefs($tip);
-                    }
-                }
-    
-                return response()->json(['status' => 'success', 'message' => 'Payment completed successfully']);
-             } else {
-                Payment::where('tx_ref', $reference)->update(['status' => 'failed']);
-            
-                return response()->json(['status' => 'failed', 'message' => 'Payment failed']);
-            }
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-public function distributeTipsToCheffs($orderId)
+public function callback($reference)
 {
-    // Get the completed payment with tips
-    $payment = Payment::where('order_id', $orderId)
-                      ->where('status', 'completed')
-                      ->first();
+    try {
+        Log::info('Received callback for reference: ' . $reference);
 
-    if (!$payment || !$payment->tips || $payment->tips <= 0) {
-        return response()->json(['error' => 'No valid completed payment with tips'], 404);
+        $data = Http::withToken(env('CHAPA_SECRET_KEY'))
+            ->get("https://api.chapa.co/v1/transaction/verify/{$reference}")
+            ->json();
+
+        Log::info('Chapa Callback Response:', $data);
+
+        if (isset($data['status']) && $data['status'] == 'success') {
+
+            $payment = Payment::where('tx_ref', $reference)->first();
+            if ($payment) {
+                $payment->status = 'completed';
+                $payment->save();
+
+                $order = Order::find($payment->order_id);
+                if ($order) {
+                    $order->status = 'paid';
+                    $order->save();
+                }
+
+               event(new PaymentCompleted($payment));
+
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Payment completed and tips distributed',
+                    'tip_distribution' => $tipResponse->getData(true)
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => 'failed',
+            'message' => $data['message'] ?? 'Payment verification failed'
+        ], 400);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'failed',
+            'message' => $e->getMessage()
+        ], 500);
     }
-
-    // Get the payment date (used to match attendance)
-    $paymentDate = $payment->created_at->format('Y-m-d');
-
-    // Get cheffs who were present on the payment date
-    $cheffs = Staff::where('role', 'cheff')
-        ->whereIn('id', function ($query) use ($paymentDate) {
-            $query->select('staff_id')
-                ->from('attendance')
-                ->whereDate('scanned_at', $paymentDate)
-                ->where('status', 'present');
-        })
-        ->get();
-
-    if ($cheffs->isEmpty()) {
-        return response()->json(['message' => 'No present cheffs found on this date'], 200);
-    }
-
-    // Divide tips equally
-    $tipPerCheff = $payment->tips / $cheffs->count();
-
-    foreach ($cheffs as $cheff) {
-        $cheff->tips += $tipPerCheff;
-        $cheff->save();
-    }
-
-    return response()->json([
-        'total_tips' => $payment->tips,
-        'tip_per_cheff' => $tipPerCheff,
-        'distributed_to' => $cheffs->pluck('name')
-    ]);
 }
 
+
+
 }
+
+
 
 

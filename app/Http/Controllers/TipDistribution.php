@@ -36,7 +36,6 @@ public function distributeTipsToCheffs($orderId)
 
     $paymentTime = $payment->created_at;
 
-    // Get chefs who clocked in before or at payment time
     $clockIns = Attendance::where('mode', 'clock_in')
         ->where('status', 'present')
         ->where('scanned_at', '<=', $paymentTime)

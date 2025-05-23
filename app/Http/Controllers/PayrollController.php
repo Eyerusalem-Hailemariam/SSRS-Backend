@@ -10,6 +10,7 @@ use App\Models\StaffShift;
 use Carbon\Carbon;
 use App\Models\TipDistributions;
 use DB;
+use App\Models\Payroll;
 
 class PayrollController extends Controller
 {
@@ -130,13 +131,13 @@ class PayrollController extends Controller
                 continue;
             }
 
-            // Regular Pay Calculation
+         
             $total_deduct_minutes = $total_late_minutes + $total_early_minutes;
             $daily_deduction = $total_deduct_minutes * $minute_rate;
             $net_daily_pay = max(0, $daily_salary - $daily_deduction);
             $normal_earned += $net_daily_pay;
 
-            // Overtime Pay Calculation
+            
          
         foreach ($shifts_of_day as $shift) {
             if (!$shift->is_overtime) {
@@ -205,6 +206,7 @@ class PayrollController extends Controller
         'tips' => round($tips, 2),
         'net_salary_without_tips' => round($net_salary, 2),
         'net_salary_with_tips' => round($net_salary_with_tips, 2),
+       
     ]);
          $staff->update(['tips' => 0]);
 

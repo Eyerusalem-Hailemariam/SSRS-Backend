@@ -126,11 +126,11 @@ Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollFo
 //Payroll routes
 Route::middleware('auth:sanctum')->group(function (){
     Route::middleware('role:admin')->group(function () {
-    Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
+   
     });
 });
 Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTipsToCheffs']);
-
+ Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
 
 //order routes 
     Route::prefix('orders')->group(function () {
