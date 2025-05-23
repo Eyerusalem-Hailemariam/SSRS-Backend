@@ -72,7 +72,6 @@ class AdminController extends Controller
             'email' => 'required|email|unique:staff',
             'role' => 'required|string',
             'total_salary' => 'required|numeric|min:0',
-            'overtime_rate' => 'required|numeric|min:0',
             'tips' => 'nullable|numeric|min:0',
         ]);
 
@@ -84,7 +83,6 @@ class AdminController extends Controller
             'password' => Hash::make($tempPassword),
             'role' => $request->role, 
             'total_salary' => $request->total_salary,
-            'overtime_rate' => $request->overtime_rate,
             'tips' => $request->tips ?? 0,
 
         ]);
@@ -97,7 +95,6 @@ class AdminController extends Controller
             'email' => $staff->email,
             'role' => $staff->role,
             'total_salary' => $staff->total_salary,
-            'overtime_rate' => $staff->overtime_rate,
             'temp_password' => $tempPassword,
         ], 201);
     }

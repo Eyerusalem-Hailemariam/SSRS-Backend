@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payroll', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('staff', function (Blueprint $table) {
+            //
+                $table->dropColumn('overtime_rate'); 
         });
     }
 
@@ -22,6 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payroll');
+        Schema::table('staff', function (Blueprint $table) {
+            //
+            
+        });
     }
 };

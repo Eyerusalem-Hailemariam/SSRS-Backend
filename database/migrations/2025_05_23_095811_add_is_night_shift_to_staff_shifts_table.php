@@ -9,22 +9,21 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+
+    public function up()
     {
         Schema::table('staff_shifts', function (Blueprint $table) {
-            //
-            $table->enum('overtime_type', ['normal', 'holiday', 'weekend','night'])->nullable()->after('is_overtime');
+            $table->boolean('is_night_shift')->default(false)->after('end_time');
         });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down()
     {
         Schema::table('staff_shifts', function (Blueprint $table) {
-            //
-            $table->dropColumn('overtime_type');
+            $table->dropColumn('is_night_shift');
         });
     }
 };
