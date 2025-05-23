@@ -344,8 +344,51 @@ public function changeStatus(Request $request, $id)
 public function getOrderStatuses()
 {
     // Fetch only the required fields from the orders table
-    $orders = Order::select('id', 'order_status', 'payment_status')->get();
-
+    $orders = Order::select('id', 'order_status')->get();
+    
+    if ($orders->isEmpty()) {
+        return response()->json(['message' => 'No orders found'], 404);
+    }
     return response()->json(['orders' => $orders], 200);
+}
+
+
+public function getKitchenOrders()
+{
+    // Fetch orders with payment_status 'completed' and relevant order statuses
+    $orders = Order::where('payment_status', 'completed')
+        ->where(function ($query) {
+            // For dine-in orders, only check payment status
+            $query->where('order_type', 'dine-in');
+            // For remote orders, check both payment status and arrival
+            $query->orWhere(function ($subQuery) {
+                $subQuery->where('order_type', 'remote')
+                    ->where('arrived', 1); // Ensure remote orders have arrived
+            });
+        })
+        ->whereIn('order_status', ['pending','processing','ready','completed','canceled']) // Relevant statuses for the kitchen
+        ->with('orderItems.menuItem') // Include order items and menu items
+        ->orderBy('order_date_time', 'asc') // Order by the time the order was placed
+        ->get();
+
+    // Format the response
+    $response = $orders->map(function ($order) {
+        return [
+            'order_id' => $order->id,
+            'order_type' => $order->order_type, // Include order type for clarity
+            'order_status' => $order->order_status,
+            'table_number' => $order->table ? $order->table->table_number : null, // Include table number if available
+            'order_date_time' => $order->order_date_time, // Include order date and time
+            'items' => $order->orderItems->map(function ($item) {
+                return [
+                    'menu_item_name' => $item->menuItem->name,
+                    'quantity' => $item->quantity,
+                    'excluded_ingredients' => $item->excluded_ingredients ? json_decode($item->excluded_ingredients) : [], // Decode excluded ingredients
+                ];
+            }),
+        ];
+    });
+
+    return response()->json(['orders' => $response], 200);
 }
 }
