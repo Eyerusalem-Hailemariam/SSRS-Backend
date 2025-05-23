@@ -131,7 +131,7 @@ Route::middleware('auth:sanctum')->group(function (){
 //order routes 
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
-        Route::get('/', [OrderController::class, 'getKitchenOrders']); 
+        Route::get('/kds', [OrderController::class, 'getKitchenOrders']); 
         Route::get('/user', [OrderController::class, 'getUserOrders']);
         Route::get('/statuses', [OrderController::class, 'getOrderStatuses']);
         Route::get('/{id}', [OrderController::class, 'show']);
