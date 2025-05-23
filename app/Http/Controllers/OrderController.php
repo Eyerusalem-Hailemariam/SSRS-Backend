@@ -384,6 +384,8 @@ public function getKitchenOrders()
             'order_id' => $order->id,
             'order_type' => $order->order_type, // Include order type for clarity
             'order_status' => $order->order_status,
+            'table_number' => $order->table ? $order->table->table_number : null, // Include table number if available
+            'order_date_time' => $order->order_date_time, // Include order date and time
             'items' => $order->orderItems->map(function ($item) {
                 return [
                     'menu_item_name' => $item->menuItem->name,
