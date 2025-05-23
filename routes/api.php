@@ -131,14 +131,15 @@ Route::middleware('auth:sanctum')->group(function (){
 //order routes 
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
+        Route::get('/', [OrderController::class, 'getKitchenOrders']); 
         Route::get('/user', [OrderController::class, 'getUserOrders']);
+        Route::get('/statuses', [OrderController::class, 'getOrderStatuses']);
         Route::get('/{id}', [OrderController::class, 'show']);
         Route::post('/guest', [OrderController::class, 'storeForGuestUser']);
         Route::patch('/{id}/notify-arrival', [OrderController::class, 'notifyArrival']);
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
         Route::delete('/{id}', [OrderController::class, 'destroy']);
-        Route::get('/status', [OrderController::class, 'getOrderStatuses']);
     });
 
     //order routes for authenticated users
