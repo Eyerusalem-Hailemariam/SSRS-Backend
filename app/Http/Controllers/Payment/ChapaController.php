@@ -226,48 +226,49 @@ class ChapaController extends Controller
         }
     }
 
-
-private function distributeTipToChefs($tip)
+public function distributeTipsToCheffs($orderId)
 {
-    // Get the current time
-    $currentTime = now();
+    // Get the completed payment with tips
+    $payment = Payment::where('order_id', $orderId)
+                      ->where('status', 'completed')
+                      ->first();
 
-    // Fetch chefs who are clocked in but not clocked out
-    $chefs = Staff::where('role', 'chef')
-        ->whereHas('attendance', function ($query) use ($currentTime) {
-            $query->where('mode', 'clock_in')
-                ->where('scanned_at', '<=', $currentTime)
-                ->whereDoesntHave('attendance', function ($subQuery) {
-                    $subQuery->where('mode', 'clock_out');
-                });
+    if (!$payment || !$payment->tips || $payment->tips <= 0) {
+        return response()->json(['error' => 'No valid completed payment with tips'], 404);
+    }
+
+    // Get the payment date (used to match attendance)
+    $paymentDate = $payment->created_at->format('Y-m-d');
+
+    // Get cheffs who were present on the payment date
+    $cheffs = Staff::where('role', 'cheff')
+        ->whereIn('id', function ($query) use ($paymentDate) {
+            $query->select('staff_id')
+                ->from('attendance')
+                ->whereDate('scanned_at', $paymentDate)
+                ->where('status', 'present');
         })
         ->get();
 
-    if ($chefs->isEmpty()) {
-        Log::info('No chefs are clocked in to distribute the tip.');
-        return;
+    if ($cheffs->isEmpty()) {
+        return response()->json(['message' => 'No present cheffs found on this date'], 200);
     }
 
-    // Calculate the tip share for each chef
-    $tipPerChef = $tip / $chefs->count();
+    // Divide tips equally
+    $tipPerCheff = $payment->tips / $cheffs->count();
 
-    // Distribute the tip to each chef
-    foreach ($chefs as $chef) {
-        $chef->increment('tips', $tipPerChef);
-        Log::info("Distributed {$tipPerChef} tip to Chef ID: {$chef->id}");
+    foreach ($cheffs as $cheff) {
+        $cheff->tips += $tipPerCheff;
+        $cheff->save();
     }
-    return response()->json(['message' => 'Tip distributed successfully to chefs.'], 200);
-}
-public function distributeTip(Request $request)
-{
-    $validatedData = $request->validate([
-        'tip' => 'required|numeric|min:0.01', // Validate the tip amount
+
+    return response()->json([
+        'total_tips' => $payment->tips,
+        'tip_per_cheff' => $tipPerCheff,
+        'distributed_to' => $cheffs->pluck('name')
     ]);
-
-    $tip = $validatedData['tip'];
-
-    return $this->distributeTipToChefs($tip);
 }
+
 }
 
 

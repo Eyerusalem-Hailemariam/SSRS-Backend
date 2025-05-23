@@ -24,6 +24,7 @@ use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Auth\StaffAuthController;
 use App\Http\Controllers\Shift\StaffShiftController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\TipDistribution;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,7 +45,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
-        Route::put('/admin/updateStaff', [AdminController::class, 'updateStaff']);
+
+Route::put('/admin/updateStaff/{id}', [AdminController::class, 'updateStaff']);
         Route::Delete('/admin/staff', [AdminController::class, 'deleteStaff']);
         Route::get('/admin/staff/{id}/shifts', [ShiftController::class, 'getShiftsByStaffId']);
         Route::get('/admin/staff/shifts', [ShiftController::class, 'getAllShifts']);
@@ -54,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/profile/change-password', [ProfileController::class, 'changePassword']);
     Route::put('/staff/update', [StaffAuthController::class, 'updateAccount']);  
 });
+
 //Staff routes
 Route::post('/reset-password', [StaffAuthController::class, 'resetPassword']);
 Route::post('/forgot-password', [StaffAuthController::class, 'forgotPassword']);
@@ -126,6 +129,7 @@ Route::middleware('auth:sanctum')->group(function (){
     Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
     });
 });
+Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTipsToCheffs']);
 
 
 //order routes 

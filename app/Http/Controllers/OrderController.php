@@ -252,43 +252,37 @@ public function changeStatus(Request $request, $id)
 {
     $order = Order::findOrFail($id);
 
-    // Validate the new status
+    // Validate new status
     $validatedData = $request->validate([
         'order_status' => 'required|in:pending,processing,ready,completed,canceled',
     ]);
 
-    // Handle cancellation logic
+    // Handle cancellation
     if ($validatedData['order_status'] === 'canceled') {
-        // Allow cancellation only if the order is in a pending state
         if ($order->order_status !== 'pending') {
             return response()->json(['error' => 'Only pending orders can be canceled'], 400);
         }
 
-    // Free the associated table if applicable
-    if ($order->table_id) {
-        $table = Table::find($order->table_id);
-        if ($table) {
-            $table->update(['table_status' => 'free']);
+        // Free the associated table
+        if ($order->table_id) {
+            $table = Table::find($order->table_id);
+            if ($table) {
+                $table->update(['table_status' => 'free']);
+            }
         }
-    }
 
-        // Update the order status to canceled
         $order->update(['order_status' => 'canceled']);
 
         return response()->json(['message' => 'Order canceled successfully', 'order' => $order], 200);
     }
 
-    // For other status changes, ensure the payment is completed
-    if (!$order->tx_ref) {
-        return response()->json(['error' => 'Order does not have a valid transaction reference'], 400);
-    }
+    $payment = Payment::where('order_id', $order->id)->first();
 
-    $payment = Payment::where('tx_ref', $order->tx_ref)->first();
     if (!$payment || $payment->status !== 'completed') {
-        return response()->json(['error' => 'Order cannot be processed until paid'], 403);
+        return response()->json(['error' => 'Order cannot be processed until payment is completed'], 403);
     }
 
-    // Free the table if the order is completed
+    // Free table if order is completed
     if ($validatedData['order_status'] === 'completed' && $order->table_id) {
         $table = Table::find($order->table_id);
         if ($table) {
@@ -296,7 +290,6 @@ public function changeStatus(Request $request, $id)
         }
     }
 
-    // Update the order status
     $order->update(['order_status' => $validatedData['order_status']]);
 
     return response()->json(['message' => 'Order status updated', 'order' => $order]);
