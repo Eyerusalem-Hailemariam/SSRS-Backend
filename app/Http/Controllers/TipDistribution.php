@@ -70,33 +70,29 @@ foreach ($clockIns as $clockIn) {
     $tipPerCheff = $tips / count($presentCheffs);
     $distributedTo = [];
 
-   foreach ($presentCheffs as $cheff) {
-    // Avoid duplicate tip distribution
-    $existingDistribution = TipDistributions::where('staff_id', $cheff->id)
-        ->where('payment_id', $payment->id)
-        ->first();
+    foreach ($presentCheffs as $cheff) {
+        $cheff->tips += $tipPerCheff;
+        $cheff->save();
 
-    if ($existingDistribution) {
-        continue; // Tip already distributed to this cheff
+        $distribution = TipDistributions::where('staff_id', $cheff->id)->first();
+
+        if ($distribution) {
+            $distribution->amount += $tipPerCheff;
+            $distribution->save();
+        } else {
+            TipDistributions::create([
+                'staff_id' => $cheff->id,
+                'amount' => $tipPerCheff,
+                'payment_id' => $payment->id,
+            ]);
+        }
+
+        $distributedTo[] = [
+            'staff_id' => $cheff->id,
+            'name' => $cheff->name,
+            'distributed_tip' => $tipPerCheff
+        ];
     }
-
-    // Add tip to cheff's profile
-    $cheff->tips += $tipPerCheff;
-    $cheff->save();
-
-    // Record the distribution
-    TipDistributions::create([
-        'staff_id' => $cheff->id,
-        'amount' => $tipPerCheff,
-        'payment_id' => $payment->id,
-    ]);
-
-    $distributedTo[] = [
-        'staff_id' => $cheff->id,
-        'name' => $cheff->name,
-        'distributed_tip' => $tipPerCheff
-    ];
-}
 
     return response()->json([
         'total_tips' => $tips,
