@@ -8,6 +8,7 @@ use App\Models\Staff;
 use App\Models\Attendance;
 use App\Models\StaffShift;
 use Carbon\Carbon;
+use App\Models\TipDistributions;
 use DB;
 
 class PayrollController extends Controller
@@ -60,7 +61,9 @@ class PayrollController extends Controller
 
     foreach ($all_staffs as $staff) {
         $total_salary = $staff->total_salary;
-        $tips = $staff->tips ?? 0;
+        $tips = TipDistributions::where('staff_id', $staff->id)
+        ->whereBetween('created_at', [$start_date, $end_date])
+        ->sum('amount');
 
         $shifts = StaffShift::where('staff_id', $staff->id)
             ->whereBetween('start_time', [$start_date, $end_date])
