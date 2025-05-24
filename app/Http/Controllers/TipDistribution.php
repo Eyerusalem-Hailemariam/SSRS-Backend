@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class TipDistribution extends Controller
 {
-public function distributeTipsToCheffs($orderId)
+public function distributeTipsToChefs($orderId)
 {
     
     $order = Order::find($orderId);
@@ -36,15 +36,15 @@ public function distributeTipsToCheffs($orderId)
     }
 
     
-    $cheffShifts = DB::table('staff_shifts')
+    $chefShifts = DB::table('staff_shifts')
         ->where('date', $paymentTime->toDateString())
         ->whereTime('start_time', '<=', $paymentTime->toTimeString())
         ->whereTime('end_time', '>=', $paymentTime->toTimeString())
         ->pluck('staff_id');
 
-    $eligibleCheffs = [];
+    $eligibleChefs = [];
 
-    foreach ($cheffShifts as $staffId) {
+    foreach ($chefShifts as $staffId) {
         
         $clockIn = Attendance::where('staff_id', $staffId)
             ->where('mode', 'clock_in')
@@ -66,29 +66,29 @@ public function distributeTipsToCheffs($orderId)
         if ($hasClockedOut) continue;
 
      
-        $cheff = Staff::where('id', $staffId)->where('role', 'cheff')->first();
-        if ($cheff) {
-            $eligibleCheffs[] = $cheff;
+        $chef = Staff::where('id', $staffId)->where('role', 'chef')->first();
+        if ($chef) {
+            $eligibleChefs[] = $chef;
         }
     }
 
 
-    if (count($eligibleCheffs) === 0) {
-        return response()->json(['message' => 'No cheffs were present at the time of payment.']);
+    if (count($eligibleChefs) === 0) {
+        return response()->json(['message' => 'No chefs were present at the time of payment.']);
     }
 
     
-    $tipPerCheff = $tipAmount / count($eligibleCheffs);
-    foreach ($eligibleCheffs as $cheff) {
-        $cheff->tips += $tipPerCheff;
-        $cheff->save();
+    $tipPerChef = $tipAmount / count($eligibleChefs);
+    foreach ($eligibleChefs as $chef) {
+        $chef->tips += $tipPerChef;
+        $chef->save();
     }
 
     return response()->json([
         'message' => 'Tips distributed successfully.',
-        'tip_per_cheff' => $tipPerCheff,
-        'total_cheffs' => count($eligibleCheffs),
-        'cheffs' => $eligibleCheffs
+        'tip_per_chef' => $tipPerChef,
+        'total_chefs' => count($eligibleChefs),
+        'chefs' => $eligibleChefs
     ]);
 }
 

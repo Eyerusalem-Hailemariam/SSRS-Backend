@@ -11,10 +11,19 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Staff;
 use App\Events\PaymentCompleted;
+use App\Http\Controllers\TipDistribution;
 
 
 class ChapaController extends Controller
 {
+
+    protected $tipDistribution;
+
+    public function __construct(TipDistribution $tipDistribution)
+    {
+        $this->tipDistribution = $tipDistribution;
+    }
+
 
     /**
      * @OA\Post(
@@ -198,9 +207,17 @@ public function callback($reference)
 
                 $order = Order::find($payment->order_id);
                 if ($order) {
-                    $order->status = 'paid';
+                    $order->payment_status = 'completed';
                     $order->save();
+
+                    // Call the distributeTipsToChefs function
+                    $tipResponse = $this->tipDistribution->distributeTipsToChefs($order->id);
+
+                    // Log or handle the response from the tip distribution
+                    Log::info('Tip Distribution Response:', ['response' => $tipResponse]);
                 }
+
+
 
                event(new PaymentCompleted($payment));
 

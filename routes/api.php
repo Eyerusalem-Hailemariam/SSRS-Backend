@@ -129,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function (){
    
     });
 });
-Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTipsToCheffs']);
+Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTipsToChefs']);
  Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
 
 //order routes 
