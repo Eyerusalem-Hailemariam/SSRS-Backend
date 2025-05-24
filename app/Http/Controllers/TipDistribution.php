@@ -8,96 +8,91 @@ use App\Models\Staff;
 use App\Models\TipDistributions;
 use App\Models\Attendance;
 use App\Models\Order;
+use Illuminate\Support\Facades\DB;
 
 class TipDistribution extends Controller
 {
 public function distributeTipsToCheffs($orderId)
 {
-    $payment = Payment::where('order_id', $orderId)
-                      ->where('status', 'completed')
-                      ->first();
-
+    // Step 1: Get order and payment
     $order = Order::find($orderId);
-
-    if (!$payment || !$order) {
-        return response()->json(['error' => 'Payment or order not found'], 404);
+    if (!$order) {
+        return response()->json(['message' => 'Order not found.'], 404);
     }
 
-    $tips = $payment->amount - $order->total_price;
+    $payment = Payment::where('order_id', $orderId)
+        ->where('status', 'completed')
+        ->first();
 
-    if ($tips <= 0) {
-        return response()->json(['error' => 'No tips to distribute (payment equals or less than order total)'], 200);
-    }
-
-    $alreadyDistributed = TipDistributions::where('payment_id', $payment->id)->exists();
-    if ($alreadyDistributed) {
-        return response()->json(['message' => 'Tips already distributed for this payment.'], 200);
+    if (!$payment) {
+        return response()->json(['message' => 'No completed payment found for this order.'], 404);
     }
 
     $paymentTime = $payment->created_at;
+    $tipAmount = $payment->amount - $order->total_price;
 
-    $clockIns = Attendance::where('mode', 'clock_in')
-        ->where('status', 'present')
-        ->where('scanned_at', '<=', $paymentTime)
-        ->get();
-
-   $presentCheffs = [];
-
-foreach ($clockIns as $clockIn) {
-    $clockOut = Attendance::where('staff_id', $clockIn->staff_id)
-        ->where('mode', 'clock_out')
-        ->where('status', 'present')
-        ->where('scanned_at', '>=', $paymentTime)
-        ->first();
-
-    $isStillWorking = !$clockOut;
-
-    $cheff = Staff::where('id', $clockIn->staff_id)
-        ->where('role', 'cheff')
-        ->first();
-
-    if ($cheff && ($clockOut || $isStillWorking)) {
-        $presentCheffs[] = $cheff;
-    }
-}
-
-
-    if (empty($presentCheffs)) {
-        return response()->json(['message' => 'No cheffs were present at the time of payment.'], 200);
+    if ($tipAmount <= 0) {
+        return response()->json(['message' => 'No tips to distribute.']);
     }
 
-    $tipPerCheff = $tips / count($presentCheffs);
-    $distributedTo = [];
+    // Step 2: Get cheffs who had a shift that includes the payment time
+    $cheffShifts = DB::table('staff_shifts')
+        ->where('date', $paymentTime->toDateString())
+        ->whereTime('start_time', '<=', $paymentTime->toTimeString())
+        ->whereTime('end_time', '>=', $paymentTime->toTimeString())
+        ->pluck('staff_id');
 
-    foreach ($presentCheffs as $cheff) {
+    $eligibleCheffs = [];
+
+    foreach ($cheffShifts as $staffId) {
+        // Check for clock-in before payment time
+        $clockIn = Attendance::where('staff_id', $staffId)
+            ->where('mode', 'clock_in')
+            ->where('status', 'present')
+            ->where('scanned_at', '<=', $paymentTime)
+            ->orderByDesc('scanned_at')
+            ->first();
+
+        if (!$clockIn) continue;
+
+        // Ensure no clock-out after that clock-in but before payment
+        $hasClockedOut = Attendance::where('staff_id', $staffId)
+            ->where('mode', 'clock_out')
+            ->where('status', 'present')
+            ->where('scanned_at', '>=', $clockIn->scanned_at)
+            ->where('scanned_at', '<', $paymentTime)
+            ->exists();
+
+        if ($hasClockedOut) continue;
+
+        // Confirm the staff is a cheff
+        $cheff = Staff::where('id', $staffId)->where('role', 'cheff')->first();
+        if ($cheff) {
+            $eligibleCheffs[] = $cheff;
+        }
+    }
+
+    // Step 3: Handle if no cheffs were found
+    if (count($eligibleCheffs) === 0) {
+        return response()->json(['message' => 'No cheffs were present at the time of payment.']);
+    }
+
+    // Step 4: Distribute the tips
+    $tipPerCheff = $tipAmount / count($eligibleCheffs);
+    foreach ($eligibleCheffs as $cheff) {
         $cheff->tips += $tipPerCheff;
         $cheff->save();
-
-        $distribution = TipDistributions::where('staff_id', $cheff->id)->first();
-
-        if ($distribution) {
-            $distribution->amount += $tipPerCheff;
-            $distribution->save();
-        } else {
-            TipDistributions::create([
-                'staff_id' => $cheff->id,
-                'amount' => $tipPerCheff,
-                'payment_id' => $payment->id,
-            ]);
-        }
-
-        $distributedTo[] = [
-            'staff_id' => $cheff->id,
-            'name' => $cheff->name,
-            'distributed_tip' => $tipPerCheff
-        ];
     }
 
     return response()->json([
-        'total_tips' => $tips,
+        'message' => 'Tips distributed successfully.',
         'tip_per_cheff' => $tipPerCheff,
-        'distributed_to' => $distributedTo
+        'total_cheffs' => count($eligibleCheffs),
+        'cheffs' => $eligibleCheffs
     ]);
 }
+
+
+
 
 }
