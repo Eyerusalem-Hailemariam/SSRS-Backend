@@ -12,7 +12,7 @@ class DistributeTip
     {
         try {
             $tipDistributor = new TipDistribution();
-            $response = $tipDistributor->distributeTipsToCheffs($event->payment->order_id);
+            $response = $tipDistributor->distributeTipsToChefs($event->payment->order_id);
 
             Log::info('Tips distributed successfully.', ['response' => $response]);
         } catch (\Exception $e) {
