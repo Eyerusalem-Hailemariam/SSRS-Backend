@@ -24,7 +24,7 @@ public function store(Request $request)
         'start_time' => 'nullable|date_format:H:i',
         'end_time' => 'nullable|date_format:H:i',
         'is_overtime' => 'nullable|boolean',
-        'overtime_type' => 'nullable|in:normal,holiday,weekend,night',
+        'overtime_type' => 'nullable|in:normal,weekly,holiday,weekend',
         'is_night_shift' => 'nullable|boolean', 
     ]);
 
@@ -67,7 +67,7 @@ public function store(Request $request)
         ], 409);
     }
 
-    $overtime = $request->has('is_overtime') ? ($request->boolean('is_overtime') ? 1 : 0) : $shift->is_overtime;
+    $overtime = $request->has('is_overtime') ? $shift->is_overtime : ($request->boolean('is_overtime') ? 1 : 0);
     $overtimeType = $request->overtime_type ?? ($shift->is_overtime ? $shift->overtime_type : null);
 
     if ($overtime && !$overtimeType) {
@@ -152,7 +152,9 @@ public function store(Request $request)
     {
         $staffShift = StaffShift::findOrFail($id);
         $staffShift->delete();
-        return response()->json(null, 204);
+        return response()->json([
+            'message' => 'Staff Shift deleted successfully.',
+        ], 200);
     }
 
     public function index()
