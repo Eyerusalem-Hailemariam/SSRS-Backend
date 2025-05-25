@@ -16,7 +16,7 @@ public function store(Request $request)
         'start_time' => 'required|date_format:H:i',
         'end_time' => 'required|date_format:H:i',
         'is_overtime' => 'nullable|boolean',
-        'overtime_type' => 'nullable|in:normal,holiday,weekend,night',
+        'overtime_type' => 'nullable|in:normal,weekly,holiday,weekend',
     ]);
 
     $isOvertime = $request->boolean('is_overtime');
