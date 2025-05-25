@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('staff_shifts', function (Blueprint $table) {
-            //
+            //  $table->dropColumn('overtime_type');
             $table->enum('overtime_type', ['normal', 'holiday', 'weekend','night'])->nullable()->after('is_overtime');
         });
     }

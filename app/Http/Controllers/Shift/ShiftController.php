@@ -81,7 +81,9 @@ public function store(Request $request)
     {
         $shift = Shift::findOrFail($id);
         $shift->delete();
-        return response()->json(null, 204);
+        return response()->json([
+            'message' => 'Shift deleted successfully.',
+        ], 200);
     }
 
 
