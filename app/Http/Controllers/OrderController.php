@@ -276,7 +276,7 @@ public function changeStatus(Request $request, $id)
         return response()->json(['message' => 'Order canceled successfully', 'order' => $order], 200);
     }
 
-    $payment = Payment::where('order_id', $order->id)->first();
+    $payment = Payment::where('order_id', $order->id)->latest()->first();
 
     if (!$payment || $payment->status !== 'completed') {
         return response()->json(['error' => 'Order cannot be processed until payment is completed'], 403);
