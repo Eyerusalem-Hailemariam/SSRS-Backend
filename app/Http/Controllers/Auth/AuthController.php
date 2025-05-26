@@ -332,6 +332,12 @@ class AuthController extends Controller
 
         public function forgotPassword(Request $request)
         {
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'The email address you entered does not exist.'], 404);
+            }
+
             $request->validate(['email' => 'required|email|exists:users,email']);
         
             $email = $request->email;
@@ -356,6 +362,12 @@ class AuthController extends Controller
 
         public function resetPassword(Request $request)
         {
+            $user = User::where('email', $request->email)->first();
+
+            if (!$user) {
+                return response()->json(['message' => 'The email address you entered does not exist.'], 404);
+            }
+            
             $request->validate([
                 'email' => 'required|email|exists:users,email',
                 'token' => 'required',
