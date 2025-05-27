@@ -391,4 +391,25 @@ public function getKitchenOrders()
 
     return response()->json(['orders' => $response], 200);
 }
+
+public function getReadyOrders()
+{
+    // Fetch orders with status 'ready'
+    $orders = Order::where('order_status', 'ready')
+        ->with('table', 'customer') // Include table and customer details
+        ->orderBy('order_date_time', 'asc') // Order by the time the order was placed
+        ->get();
+
+    // Format the response
+    $response = $orders->map(function ($order) {
+        return [
+            'order_id' => $order->id,
+            'customer_name' => $order->customer ? $order->customer->name : $order->customer_temp_id, // Use customer name or temp ID
+            'table_number' => $order->table ? $order->table->table_number : null, // Include table number if available
+            'order_status' => $order->order_status, // Status should always be 'ready'
+        ];
+    });
+
+    return response()->json(['ready_orders' => $response], 200);
+}
 }
