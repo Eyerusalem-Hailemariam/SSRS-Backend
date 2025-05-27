@@ -136,6 +136,7 @@ Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTi
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
         Route::get('/kds', [OrderController::class, 'getKitchenOrders']); 
+        Route::get('/ready', [OrderController::class, 'getReadyOrders']);
         Route::get('/user', [OrderController::class, 'getUserOrders']);
         Route::get('/statuses', [OrderController::class, 'getOrderStatuses']);
         Route::get('/{id}', [OrderController::class, 'show']);
