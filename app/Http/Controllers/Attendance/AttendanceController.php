@@ -226,26 +226,51 @@ class AttendanceController extends Controller
 public function markAbsent()
 {
     $today = Carbon::today();
-    $shifts = StaffShift::whereDate('date', $today)->get();
+    $shifts = StaffShift::all();
 
     if ($shifts->isEmpty()) {
         return response()->json(['message' => 'No shifts found for today.'], 404);
     }
 
     $absentCount = 0;
+    $currentTime = now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0);
 
     foreach ($shifts as $shift) {
+            // Construct the shift's end time
+            $shiftEndTime = Carbon::parse($shift->date . ' ' . $shift->end_time)
+            ->setTimezone('Africa/Nairobi')
+            ->setSeconds(0)
+            ->setMicroseconds(0);
+
+        // If the shift is a night shift, add a day to the end time
+        if ($shift->is_night_shift) {
+            $shiftEndTime->addDay();
+        }
+
+        // Check if the shift's end time has passed
+        if ($currentTime->lessThanOrEqualTo($shiftEndTime)) {
+            continue; // Skip marking absent if the shift hasn't ended yet
+        }
+
         $hasClockIn = Attendance::where('staff_id', $shift->staff_id)
             ->where('staff_shift_id', $shift->id)
             ->where('mode', 'clock_in')
             ->exists();
 
         if (!$hasClockIn) {
+            // Construct scanned_at using the shift's date and start_time
+            $scannedAt = Carbon::parse($shift->date . ' ' . $shift->start_time)
+                ->setTimezone('Africa/Nairobi')
+                ->setSeconds(0)
+                ->setMicroseconds(0);
+        }
+
+        if (!$hasClockIn) {
             Attendance::create([
                 'staff_id' => $shift->staff_id,
                 'staff_shift_id' => $shift->id,
                 'mode' => 'clock_in',
-                'scanned_at' => now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0),
+                'scanned_at' => $scannedAt,
                 'status' => 'absent',
                 'is_late' => false,
                 'late_minutes' => 0,
