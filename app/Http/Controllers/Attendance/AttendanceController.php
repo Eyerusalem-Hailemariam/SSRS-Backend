@@ -233,8 +233,25 @@ public function markAbsent()
     }
 
     $absentCount = 0;
+    $currentTime = now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0);
 
     foreach ($shifts as $shift) {
+            // Construct the shift's end time
+            $shiftEndTime = Carbon::parse($shift->date . ' ' . $shift->end_time)
+            ->setTimezone('Africa/Nairobi')
+            ->setSeconds(0)
+            ->setMicroseconds(0);
+
+        // If the shift is a night shift, add a day to the end time
+        if ($shift->is_night_shift) {
+            $shiftEndTime->addDay();
+        }
+
+        // Check if the shift's end time has passed
+        if ($currentTime->lessThanOrEqualTo($shiftEndTime)) {
+            continue; // Skip marking absent if the shift hasn't ended yet
+        }
+
         $hasClockIn = Attendance::where('staff_id', $shift->staff_id)
             ->where('staff_shift_id', $shift->id)
             ->where('mode', 'clock_in')
