@@ -54,8 +54,15 @@ public function storeForLoggedInUser(Request $request)
     if (!empty($validatedData['table_number'])) {
         $table = Table::where('table_number', $validatedData['table_number'])->first();
 
-        if ($table->table_status === 'occupied') {
-            return response()->json(['error' => 'The selected table is already occupied'], 400);
+        // Check if the table is occupied by another customer on the same day
+        $existingOrder = Order::where('table_id', $table->id)
+            ->whereDate('order_date_time', now()->toDateString())
+            ->where('customer_id', '!=', auth()->id())
+            ->where('order_status', '!=', 'canceled')
+            ->exists();
+
+        if ($existingOrder) {
+            return response()->json(['error' => 'The selected table is already occupied by another customer'], 400);
         }
     }
 
@@ -116,8 +123,15 @@ public function storeForGuestUser(Request $request)
     if (!empty($validatedData['table_number'])) {
         $table = Table::where('table_number', $validatedData['table_number'])->first();
 
-        if ($table->table_status === 'occupied') {
-            return response()->json(['error' => 'The selected table is already occupied'], 400);
+        // Check if the table is occupied by another customer on the same day
+        $existingOrder = Order::where('table_id', $table->id)
+            ->whereDate('order_date_time', now()->toDateString())
+            ->where('customer_temp_id', '!=', $validatedData['customer_temp_id'])
+            ->where('order_status', '!=', 'canceled')
+            ->exists();
+
+        if ($existingOrder) {
+            return response()->json(['error' => 'The selected table is already occupied by another customer'], 400);
         }
     }
 
