@@ -171,7 +171,7 @@ class AttendanceController extends Controller
              return response()->json(['message' => 'Attendance record not found'], 404);
          }
      
-         $attendance->approved_by_admin = true;
+         $attendance->approved_by_admin = !$attendance->approved_by_admin;
          $attendance->save();
      
          return response()->json([
@@ -187,7 +187,7 @@ class AttendanceController extends Controller
              return response()->json(['message' => 'Attendance record not found'], 404);
          }
      
-         $attendance->late_approved = true;
+         $attendance->late_approved = !$attendance->late_approved;
          $attendance->save();
      
          return response()->json([
@@ -203,7 +203,7 @@ class AttendanceController extends Controller
              return response()->json(['message' => 'Attendance record not found'], 404);
          }
      
-         $attendance->early_approved = true;
+         $attendance->early_approved = !$attendance->early_approved;
          $attendance->save();
      
          return response()->json([

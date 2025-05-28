@@ -210,40 +210,51 @@ public function notifyArrival(Request $request, $id)
     // Update order (only if pending)
     public function update(Request $request, $id)
     {
-        $order = Order::findOrFail($id);
-
-        if ($order->order_status !== 'pending') {
-            return response()->json(['error' => 'Order cannot be modified after processing'], 400);
-        }
-
-        $validatedData = $request->validate([
-            'order_items' => 'required|array',
-            'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
-            'order_items.*.quantity' => 'required|integer|min:1',
-            'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
-            'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
+        try {
+            $order = Order::findOrFail($id);
     
-        ]);
-
-        $order->orderItems()->delete();
-        $totalAmount = 0;
-
-        foreach ($validatedData['order_items'] as $item) {
-            $menuItem = MenuItem::findOrFail($item['menu_item_id']);
-            $orderItem = new OrderItem([
-                'menu_item_id' => $item['menu_item_id'],
-                'quantity' => $item['quantity'],
-                'total_price' => $menuItem->price* $item['quantity'],
-                'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : json_encode([]), // Save excluded ingredients as JSON
-
+            if ($order->order_status !== 'pending') {
+                return response()->json(['error' => 'Order cannot be modified after processing'], 400);
+            }
+    
+            $validatedData = $request->validate([
+                'order_items' => 'required|array',
+                'order_items.*.menu_item_id' => 'required|exists:menu_items,id',
+                'order_items.*.quantity' => 'required|integer|min:1',
+                'order_items.*.excluded_ingredients' => 'nullable|array', // Allow excluded ingredients as an array
+                'order_items.*.excluded_ingredients.*' => 'exists:ingredients,id', // Validate each excluded ingredient
             ]);
-            $order->orderItems()->save($orderItem);
-            $totalAmount += $menuItem->price * $item['quantity'];
+    
+            // Delete existing order items
+            $order->orderItems()->delete();
+            $totalAmount = 0;
+    
+            foreach ($validatedData['order_items'] as $item) {
+                $menuItem = MenuItem::find($item['menu_item_id']);
+                if (!$menuItem) {
+                    return response()->json(['error' => 'Menu item not found'], 404);
+                }
+    
+                $orderItem = new OrderItem([
+                    'menu_item_id' => $item['menu_item_id'],
+                    'quantity' => $item['quantity'],
+                    'total_price' => $menuItem->price * $item['quantity'],
+                    'excluded_ingredients' => isset($item['excluded_ingredients']) ? json_encode($item['excluded_ingredients']) : json_encode([]), // Save excluded ingredients as JSON
+                ]);
+                $order->orderItems()->save($orderItem);
+                $totalAmount += $menuItem->price * $item['quantity'];
+            }
+    
+            $order->update(['total_price' => $totalAmount]);
+    
+            return response()->json(['message' => 'Order updated successfully', 'order' => $order->load('orderItems.menuItem')], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Order not found'], 404);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['error' => 'Validation failed', 'details' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An unexpected error occurred', 'details' => $e->getMessage()], 500);
         }
-
-        $order->update(['total_price' => $totalAmount]);
-
-        return response()->json(['message' => 'Order updated successfully', 'order' => $order->load('orderItems.menuItem')]);
     }
 
     // Change order status (pending, processing, ready, completed, canceled)
@@ -390,5 +401,29 @@ public function getKitchenOrders()
     });
 
     return response()->json(['orders' => $response], 200);
+}
+
+public function getReadyOrders()
+{
+    // Fetch orders with status 'ready'
+    $orders = Order::where('order_status', 'ready')
+        ->with('table', 'customer') // Include table and customer details
+        ->orderBy('order_date_time', 'asc') // Order by the time the order was placed
+        ->get();
+
+    // Format the response
+    $response = $orders->map(function ($order) {
+        return [
+            'order_id' => $order->id,
+            'customer_id' => $order->customer_id, // Include customer ID
+            'customer_temp_id' => $order->customer_temp_id, // Include customer temp ID
+            'customer_ip' => $order->customer_ip, // Include customer IP
+            'customer_name' => $order->customer ? $order->customer->name : $order->customer_temp_id, // Use customer name or temp ID
+            'table_number' => $order->table ? $order->table->table_number : null, // Include table number if available
+            'order_status' => $order->order_status, // Status should always be 'ready'
+          ];
+    });
+
+    return response()->json(['ready_orders' => $response], 200);
 }
 }
