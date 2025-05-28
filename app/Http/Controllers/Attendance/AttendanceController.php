@@ -226,7 +226,7 @@ class AttendanceController extends Controller
 public function markAbsent()
 {
     $today = Carbon::today();
-    $shifts = StaffShift::whereDate('date', $today)->get();
+    $shifts = StaffShift::all();
 
     if ($shifts->isEmpty()) {
         return response()->json(['message' => 'No shifts found for today.'], 404);
@@ -241,11 +241,19 @@ public function markAbsent()
             ->exists();
 
         if (!$hasClockIn) {
+            // Construct scanned_at using the shift's date and start_time
+            $scannedAt = Carbon::parse($shift->date . ' ' . $shift->start_time)
+                ->setTimezone('Africa/Nairobi')
+                ->setSeconds(0)
+                ->setMicroseconds(0);
+        }
+
+        if (!$hasClockIn) {
             Attendance::create([
                 'staff_id' => $shift->staff_id,
                 'staff_shift_id' => $shift->id,
                 'mode' => 'clock_in',
-                'scanned_at' => now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0),
+                'scanned_at' => $scannedAt,
                 'status' => 'absent',
                 'is_late' => false,
                 'late_minutes' => 0,
