@@ -67,8 +67,9 @@ public function store(Request $request)
         ], 409);
     }
 
-    $overtime = $request->has('is_overtime') ? $shift->is_overtime : ($request->boolean('is_overtime') ? 1 : 0);
-    $overtimeType = $request->overtime_type ?? ($shift->is_overtime ? $shift->overtime_type : null);
+    $overtime = $request->has('is_overtime') ? $request->boolean('is_overtime') : ($shift->is_overtime ?? 0);
+$overtimeType = $request->overtime_type ?? ($overtime ? ($shift->overtime_type ?? null) : null);
+
 
     if ($overtime && !$overtimeType) {
         return response()->json([

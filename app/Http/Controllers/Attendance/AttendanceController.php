@@ -222,5 +222,42 @@ class AttendanceController extends Controller
         $attendance = Attendance::where('staff_id', $staff_id)->get();
         return response()->json(['attendance' => $attendance], 200);
     }
-     
+
+public function markAbsent()
+{
+    $today = Carbon::today();
+    $shifts = StaffShift::whereDate('date', $today)->get();
+
+    if ($shifts->isEmpty()) {
+        return response()->json(['message' => 'No shifts found for today.'], 404);
+    }
+
+    $absentCount = 0;
+
+    foreach ($shifts as $shift) {
+        $hasClockIn = Attendance::where('staff_id', $shift->staff_id)
+            ->where('staff_shift_id', $shift->id)
+            ->where('mode', 'clock_in')
+            ->exists();
+
+        if (!$hasClockIn) {
+            Attendance::create([
+                'staff_id' => $shift->staff_id,
+                'staff_shift_id' => $shift->id,
+                'mode' => 'clock_in',
+                'scanned_at' => now()->setTimezone('Africa/Nairobi')->setSeconds(0)->setMicroseconds(0),
+                'status' => 'absent',
+                'is_late' => false,
+                'late_minutes' => 0,
+                'is_early' => false,
+                'early_minutes' => 0,
+                'approved_by_admin' => false,
+            ]);
+            $absentCount++;
+        }
+    }
+
+    return response()->json(['message' => "Absent staff marked successfully.", 'absent_count' => $absentCount], 200);
+}
+
 }     

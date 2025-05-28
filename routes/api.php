@@ -123,6 +123,8 @@ Route::put('/attendance/{id}/approve-late', [AttendanceController::class, 'appro
 Route::put('/attendance/{id}/approve-early', [AttendanceController::class, 'approveearly']);
 Route::put('/admin/attendance/{id}/approve', [AttendanceController::class, 'approveAttendance']);
 Route::post('/payroll/calculate', [PayrollController::class, 'calculatePayrollForAll']);
+Route::post('/mark-absent', [AttendanceController::class, 'markAbsent']);
+
 //Payroll routes
 Route::middleware('auth:sanctum')->group(function (){
     Route::middleware('role:admin')->group(function () {
