@@ -13,6 +13,12 @@ use App\Models\Payroll;
 
 class PayrollController extends Controller
 {
+
+    public function index()
+    {
+        $payrolls = Payroll::all();
+        return response()->json($payrolls, 200);
+    }
    
     protected function getTaxRate($income)
     {
