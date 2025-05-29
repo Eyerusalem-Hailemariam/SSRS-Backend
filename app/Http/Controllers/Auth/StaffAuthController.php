@@ -244,11 +244,11 @@ class StaffAuthController extends Controller
         $staff = auth()->user();
 
         $request->validate([
-            'email' => 'nullable|email|unique:staff,email,' . $staff->id,
+            'name' => 'nullable|string|max:255',
         ]);
-
-        if ($request->has('email') && $request->email !== $staff->email) {
-            $staff->email = $request->email;
+    
+        if ($request->has('name') && $request->name !== $staff->name) {
+            $staff->name = $request->name;
         }
 
         $staff->save();

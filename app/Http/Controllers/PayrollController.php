@@ -16,7 +16,27 @@ class PayrollController extends Controller
 
     public function index()
     {
-        $payrolls = Payroll::all();
+        $payrolls = Payroll::with('staff')->get();
+
+        $payrolls = $payrolls->map(function ($payroll) {
+            return [
+                'id' => $payroll->id,
+                'staff_id' => $payroll->staff_id,
+                'staff_name' => $payroll->staff->name,
+                'start_date' => $payroll->start_date,
+                'end_date' => $payroll->end_date,
+                'total_salary' => $payroll->total_salary,
+                'assigned_days' => $payroll->assigned_days,
+                'total_earned' => $payroll->total_earned,
+                'tax' => $payroll->tax,
+                'tips' => $payroll->tips,
+                'net_salary_without_tips' => $payroll->net_salary_without_tips,
+                'net_salary_with_tips' => $payroll->net_salary_with_tips,
+                'created_at' => $payroll->created_at,
+                'updated_at' => $payroll->updated_at,
+            ];
+        });
+
         return response()->json($payrolls, 200);
     }
    
