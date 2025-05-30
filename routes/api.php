@@ -148,6 +148,7 @@ Route::post('/distribute-tips/{orderId}', [TipDistribution::class, 'distributeTi
         Route::put('/{id}', [OrderController::class, 'update']);
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus']);
         Route::delete('/{id}', [OrderController::class, 'destroy']);
+        Route::PUT('/{id}/payment-status', [ChapaController::class, 'paymentStatus']);
     });
 
     //order routes for authenticated users

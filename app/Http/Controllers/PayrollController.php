@@ -72,6 +72,7 @@ class PayrollController extends Controller
                 return 1.25; 
         }
     }
+    
     public function calculatePayrollForAll(Request $request)
     {
     $request->validate([
@@ -89,14 +90,14 @@ class PayrollController extends Controller
         $total_salary = $staff->total_salary;
          $tips = $staff->tips ?? 0;
 
-        $shifts = StaffShift::where('staff_id', $staff->id)
-            ->whereBetween('start_time', [$start_date, $end_date])
-            ->get();
+         $shifts = StaffShift::where('staff_id', $staff->id)
+         ->whereBetween('date', [$start_date->toDateString(), $end_date->toDateString()])
+         ->get();
 
-        $assigned_days = $shifts->where('is_overtime', 0)
-            ->groupBy(function ($shift) {
-                return Carbon::parse($shift->start_time)->toDateString();
-            })->count();
+            $assigned_days = $shifts->where('is_overtime', 0)
+            ->pluck('date')
+            ->unique()
+            ->count();
 
         if ($assigned_days == 0) {
             continue;
@@ -111,7 +112,7 @@ class PayrollController extends Controller
         $overtime_earned = 0;
 
         $grouped_shifts_by_day = $shifts->groupBy(function ($shift) {
-            return Carbon::parse($shift->start_time)->toDateString();
+            return Carbon::parse($shift->date)->toDateString();
         });
 
         foreach ($grouped_shifts_by_day as $day => $shifts_of_day) {

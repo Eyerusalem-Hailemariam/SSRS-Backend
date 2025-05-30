@@ -241,6 +241,26 @@ public function callback($reference)
     }
 }
 
+public function paymentStatus($orderId) // Change the parameter type
+{
+    $order = Order::find($orderId); // Ensure $orderId is passed correctly
+
+    if (!$order) {
+        return response()->json([
+            'message' => 'Order not found',
+        ], 404);
+    }
+
+    if ($order->payment_status != 'completed') {
+        $order->payment_status = 'completed';
+        $order->save();
+    }
+
+    return response()->json([
+        'message' => 'Payment status updated successfully',
+        'order' => $order,
+    ], 200);
+}
 
 
 }
