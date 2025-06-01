@@ -45,6 +45,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::post('/admin/users', [AdminController::class, 'registerStaff']);
+        Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 
 Route::put('/admin/updateStaff/{id}', [AdminController::class, 'updateStaff']);
         Route::Delete('/admin/staff', [AdminController::class, 'deleteStaff']);
@@ -71,7 +72,6 @@ Route::post('customer/reset-password', [AuthController::class, 'resetPassword'])
 Route::post('/customer/forgot-password', [AuthController::class, 'forgotPassword']);
 
 //Admin routes
-Route::post('/register/admin', [AuthController::class, 'registerAdmin']);
 Route::post('/admin/login', [AuthController::class, 'Adminlogin']);
 Route::post('/admin/reset-password', [AuthController::class, 'resetAdminPassword']);
 Route::post('/admin/forgot-password', [AuthController::class, 'forgotAdminPassword']);
