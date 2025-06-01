@@ -254,6 +254,20 @@ public function paymentStatus($orderId) // Change the parameter type
     if ($order->payment_status != 'completed') {
         $order->payment_status = 'completed';
         $order->save();
+
+        // Add a record to the payments table
+        Payment::create([
+            'order_id' => $order->id,
+            'tx_ref' => 'cashier',
+            'amount' => $order->total_price,
+            'tips' => 0,
+            'currency' => 'ETB',
+            'status' => 'completed',
+            'email' => 'cashier@ssrs.com',
+            'first_name' => 'Cashier',
+            'last_name' => 'Cashier',
+            'phone_number' => '0000000000',
+        ]);
     }
 
     return response()->json([
