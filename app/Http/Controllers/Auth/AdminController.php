@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Mail\PasswordResetMail;
 use Illuminate\Support\Facades\DB;
 use App\Models\Shift;
+use App\Models\Admin;
 
 
 
@@ -65,6 +66,14 @@ class AdminController extends Controller
      *     )
      * )
      */
+
+     public function getAllAdmins()
+    {
+        $admins = Admin::all();
+
+        return response()->json($admins, 200);
+    }
+
     public function registerStaff(Request $request)
     {
         $request->validate([
